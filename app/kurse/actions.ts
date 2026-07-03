@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getBenutzer } from "@/lib/auth/benutzer";
 import { bucheKurstermin, type BuchungErgebnis } from "@/lib/booking/buchung";
 
@@ -17,5 +18,7 @@ export async function bucheKursterminAction(
   if (!b) return { status: "nicht_angemeldet" };
   if (!b.mitgliedId) return { status: "kein_mitglied" };
 
-  return bucheKurstermin(b.mitgliedId, kursterminId);
+  const ergebnis = await bucheKurstermin(b.mitgliedId, kursterminId);
+  if (ergebnis.status === "bestaetigt") revalidatePath("/kurse");
+  return ergebnis;
 }

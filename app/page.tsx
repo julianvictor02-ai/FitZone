@@ -23,6 +23,11 @@ export default async function Home() {
                 Mitglieder-Verwaltung
               </Link>
             )}
+            {benutzer.rolle === "mitglied" && (
+              <Link href="/kurse" className="underline">
+                Kurse buchen
+              </Link>
+            )}
             <form action={logout}>
               <button type="submit" className="underline">
                 Abmelden
@@ -40,8 +45,8 @@ export default async function Home() {
       </div>
 
       <p className="mt-10 text-sm text-gray-500">
-        Aktueller Stand: FZ-006 (Auth + Mitgliederstammdaten). Nächster Schritt laut{" "}
-        <code>docs/backlog.md</code>: Buchungs-UI für FZ-001.
+        Aktueller Stand: FZ-001 (Kursbuchung inkl. UI) und FZ-006 (Auth +
+        Mitgliederstammdaten). Details in <code>docs/backlog.md</code>.
       </p>
     </main>
   );

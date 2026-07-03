@@ -47,8 +47,14 @@ angemeldete Supabase-Konto → Mitglied ab und ruft die Kernfunktion.
 - Monatslimit Basic (5/Monat) → **FZ-010**.
 - Tarif-/Content-Zugriffsprüfung → **FZ-011**.
 - Selbst-Storno → **FZ-003**.
-- Login/Auth-Flow + Mitglieder-Seed → **FZ-006** (Action ist vorbereitet, aber erst dann produktiv).
-- Buchungs-UI (Terminliste + Button) → folgt, sobald Auth + Seed-Daten stehen.
+- Login/Auth-Flow + Mitglieder-Seed → **FZ-006** (umgesetzt; Action nutzt `getBenutzer()`).
+
+## UI (umgesetzt)
+
+`app/kurse/page.tsx` — Terminliste (nur `geplant`, Start in Zukunft) mit Modus-Filter
+(Studio/Livestream), „X von Y frei"-Zähler (nur Anzahl, keine Namen — Datenschutz) und
+`BuchenButton` (Client) für Buchungs-Feedback. `bucheKursterminAction` revalidiert
+`/kurse` nach erfolgreicher Buchung. Nur für Rolle `mitglied` (Guard).
 
 ## Verifikation (manuell, sobald Supabase steht)
 
