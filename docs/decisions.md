@@ -68,6 +68,30 @@ nach Storno** blockieren, weil die stornierte Zeile bestehen bleibt.
 
 ---
 
+## 2026-07-03 — FZ-003: Storno-Frist und Gebühren-Modell (v1)
+
+**Kontext:** Umsetzung BR5. Offen laut Spec: 2 h ist Lisas „gedachte" Grenze (nicht
+fixiert), global vs. pro Kurstyp; „Kurspreis" bei Flat-Tarifen; Auto-Abbuchung.
+
+### Entscheidung
+- **`STORNO_FRIST_STUNDEN = 2`, global** (Annahme aus Lisas Richtwert), zentrale Konstante.
+- **Gebühr nur als Flag** `storno_gebuehr_faellig` (kein Betrag, keine Abbuchung in v1;
+  Admin wickelt manuell ab). `storno_gebuehr_betrag` bleibt vorerst leer.
+- Regel: `faellig = nicht_befreit AND (jetzt > start − 2h)`. Premium (`storno_gebuehr_befreit`) nie.
+- **Storno ruft `verarbeiteWarteliste`** (nur künftiger, geplanter Termin) → schließt die
+  FZ-002-Schleife (Platz frei → Nachrücken).
+
+### Alternativen verworfen
+- Gebührenbetrag (50 % Kurspreis) schon in v1 berechnen: „Kurspreis" bei Flat-Tarifen
+  undefiniert (spec §8) → verschoben (Backlog „Später").
+- Frist pro Kurstyp: mehr Modell-/Pflegeaufwand ohne bestätigten Bedarf.
+
+### Konsequenzen
+- Positiv: Storno vollständig + wartelisten-integriert; Gebühren-Regel testbar (`verify:fz003`).
+- Negativ/Risiko: Frist-/Gebührenwerte sind Annahmen (mit Kundin bestätigen); ohne Betrag ist die finanzielle Abwicklung manuell.
+
+---
+
 ## 2026-07-03 — FZ-002: Warteliste-Design (Obergrenze, Engine, Trigger)
 
 **Kontext:** Umsetzung BR2/BR3. Offene Punkte aus der Spec: konkreter Obergrenzen-

@@ -6,6 +6,7 @@ import {
   bucheKursterminAction,
   warteAction,
   bestaetigeNachrueckungAction,
+  storniereBuchungAction,
 } from "./actions";
 
 export type Zustand =
@@ -47,11 +48,13 @@ export function KursterminAktion({
   zustand,
   position,
   fristBisISO,
+  stornoGebuehrDroht,
 }: {
   kursterminId: string;
   zustand: Zustand;
   position?: number;
   fristBisISO?: string;
+  stornoGebuehrDroht?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -62,6 +65,18 @@ export function KursterminAktion({
       const r = await action();
       setMeldung(MELDUNG[r.status] ?? r.status);
       if (AKTUALISIEREN.has(r.status)) router.refresh();
+    });
+  }
+
+  function onStorniere() {
+    start(async () => {
+      const r = await storniereBuchungAction(kursterminId);
+      if (r.status === "storniert") {
+        setMeldung(r.gebuehrFaellig ? "Storniert — Gebühr fällig" : "Storniert ✓");
+        router.refresh();
+      } else {
+        setMeldung(MELDUNG[r.status] ?? r.status);
+      }
     });
   }
 
@@ -102,7 +117,17 @@ export function KursterminAktion({
       )}
 
       {zustand === "gebucht" && (
-        <span className="text-sm font-medium text-green-700">Gebucht ✓</span>
+        <>
+          <span className="text-sm font-medium text-green-700">Gebucht ✓</span>
+          <button
+            onClick={onStorniere}
+            disabled={pending}
+            title={stornoGebuehrDroht ? "Innerhalb der Frist — Stornogebühr fällig" : undefined}
+            className={`${btn} border border-gray-400 disabled:opacity-50`}
+          >
+            {pending ? "…" : stornoGebuehrDroht ? "Stornieren (Gebühr)" : "Stornieren"}
+          </button>
+        </>
       )}
 
       {zustand === "wartend" && (

@@ -9,12 +9,14 @@ import {
   type WarteErgebnis,
   type NachrueckErgebnis,
 } from "@/lib/booking/warteliste";
+import { storniereBuchung, type StornoErgebnis } from "@/lib/booking/storno";
 
 type NichtMitglied = { status: "nicht_angemeldet" } | { status: "kein_mitglied" };
 
 export type BuchungActionErgebnis = BuchungErgebnis | NichtMitglied;
 export type WarteActionErgebnis = WarteErgebnis | NichtMitglied;
 export type NachrueckActionErgebnis = NachrueckErgebnis | NichtMitglied;
+export type StornoActionErgebnis = StornoErgebnis | NichtMitglied;
 
 async function mitgliedId(): Promise<string | NichtMitglied> {
   const b = await getBenutzer();
@@ -58,5 +60,17 @@ export async function bestaetigeNachrueckungAction(
   if (ergebnis.status === "nachgerueckt" || ergebnis.status === "abgelaufen") {
     revalidatePath("/kurse");
   }
+  return ergebnis;
+}
+
+// FZ-003 — Selbst-Storno.
+export async function storniereBuchungAction(
+  kursterminId: string,
+): Promise<StornoActionErgebnis> {
+  const id = await mitgliedId();
+  if (typeof id !== "string") return id;
+
+  const ergebnis = await storniereBuchung(id, kursterminId);
+  if (ergebnis.status === "storniert") revalidatePath("/kurse");
   return ergebnis;
 }

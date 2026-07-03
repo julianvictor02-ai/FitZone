@@ -2,8 +2,17 @@ import Link from "next/link";
 import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { requireRolle } from "@/lib/auth/benutzer";
 import { db } from "@/lib/db";
-import { buchung, kurstermin, kurstyp, trainer, wartelisteneintrag } from "@/lib/db/schema";
+import {
+  buchung,
+  kurstermin,
+  kurstyp,
+  mitglied,
+  tarif,
+  trainer,
+  wartelisteneintrag,
+} from "@/lib/db/schema";
 import { MAX_WARTELISTE } from "@/lib/booking/warteliste";
+import { stornoGebuehrFaellig } from "@/lib/booking/storno";
 import { KursterminAktion, type Zustand } from "./KursterminAktion";
 
 const DATUM = new Intl.DateTimeFormat("de-DE", {
@@ -31,6 +40,14 @@ export default async function KursePage({
     );
   }
   const mitgliedId = me.mitgliedId;
+
+  // Tarif-Befreiung für den Stornogebühr-Hinweis (BR5).
+  const [tarifInfo] = await db
+    .select({ befreit: tarif.stornoGebuehrBefreit })
+    .from(mitglied)
+    .innerJoin(tarif, eq(mitglied.tarifId, tarif.tarifId))
+    .where(eq(mitglied.mitgliedId, mitgliedId));
+  const stornoBefreit = tarifInfo?.befreit ?? false;
 
   const { modus } = await searchParams;
   const modusFilter = modus === "Studio" || modus === "Livestream" ? modus : null;
@@ -189,6 +206,11 @@ export default async function KursePage({
                 zustand={zustand}
                 position={position}
                 fristBisISO={fristBisISO}
+                stornoGebuehrDroht={
+                  zustand === "gebucht"
+                    ? stornoGebuehrFaellig(t.start, stornoBefreit)
+                    : undefined
+                }
               />
             </li>
           );
