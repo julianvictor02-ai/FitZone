@@ -27,12 +27,12 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 
 | ID | Name | Phase | Status | Quelle | Notiz |
 |----|------|-------|--------|--------|-------|
-| FZ-001 | Online-Kursbuchung mit Auto-Bestätigung | 1 | in-progress | spec.md §4 BR1, §7 | Kernlogik gegen Supabase verifiziert (5/5 BR1-Kriterien, `npm run verify:fz001`). Offen: Login/UI-E2E im Browser. |
+| FZ-001 | Online-Kursbuchung mit Auto-Bestätigung | 1 | done | spec.md §4 BR1, §7 | E2E gegen Supabase verifiziert: verify:fz001 (5/5 BR1) + verify-flow (Login→/kurse→Buchung→Anzeige) gegen laufende App. |
 | FZ-002 | Warteliste FIFO + Nachrücken + 30-Min-Fenster + harte Obergrenze | 1 | validated | spec.md §4 BR2/BR3 | Muss zeitgleich mit FZ-001 stehen. Obergrenze-Zahlwert offen. |
 | FZ-003 | Selbst-Stornierung (Frist + Gebühren-Flag, keine Abbuchung) | 1 | validated | spec.md §4 BR5 | v1 nur `stornozeitpunkt` + Flag. |
 | FZ-004 | Anwesenheitserfassung mit Zeitstempel | 1 | validated | spec.md §2 (Buchung), §7 | Enum offen/anwesend/no_show/entschuldigt. |
 | FZ-005 | Trainer-Login: eigener Kursplan + Anwesenheit abhaken | 1 | validated | spec.md §3, §7 | Nur eigene Termine sichtbar. |
-| FZ-006 | Mitgliederstammdaten (Tarif/Status), admin-gepflegt | 1 | in-progress | spec.md §2, §7 | Konzept: concepts/FZ-006-mitgliederstammdaten.md. Inkl. Auth/Rollen (benutzer-Tabelle). Login-Provisionierung + RLS offen. |
+| FZ-006 | Mitgliederstammdaten (Tarif/Status), admin-gepflegt | 1 | done | spec.md §2, §7 | Auth/Rollen (benutzer) + Guards + Admin-CRUD. Guards + Rollenauflösung live verifiziert (member-Flow); Admin-CRUD nutzt denselben Pfad. Follow-up: Login-Provisionierung + RLS (nicht Teil dieses Items). |
 | FZ-007 | Mitglieder-Selbstansicht (read-only Dashboard) | 1 | validated | spec.md §7, §11 | Tarif, mitgliedschaft_bis, eigene Buchungen. |
 | FZ-008 | Buchungsnachweis/Zeitstempel für alle Vorgänge | 1 | validated | spec.md §6 (NFR) | „Nicht verhandelbar", auditierbar. |
 | FZ-009 | Auto-Benachrichtigung bei Kursausfall/-verschiebung | 1 | validated | spec.md §4 BR8 | Kanal (Push/E-Mail/SMS) offen. |
