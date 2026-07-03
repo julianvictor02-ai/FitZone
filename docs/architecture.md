@@ -48,7 +48,7 @@ Aus `spec.md §10` übernommen (dort mit Quellen-Tags). Verbindliche Grundlage v
 
 ### Junction-Tabellen (n:m)
 - `buchung` (buchung_id PK, mitglied_id FK, kurstermin_id FK, buchungsstatus[bestaetigt|storniert], buchungszeitpunkt, stornozeitpunkt?, anwesenheit[offen|anwesend|no_show|entschuldigt], storno_gebuehr_faellig, storno_gebuehr_betrag?, trainer_notiz?) — **partieller Unique-Index (mitglied_id, kurstermin_id) WHERE buchungsstatus='bestaetigt'** (max. eine aktive Buchung; Storno-Historie bleibt, Neubuchung möglich — siehe decisions.md 2026-07-03 FZ-001)
-- `wartelisteneintrag` (wl_id PK, mitglied_id FK, kurstermin_id FK, zeitstempel, position?, status[wartend|benachrichtigt|nachgerueckt|abgelaufen], benachrichtigt_am?, frist_bis?) — **Unique(mitglied_id, kurstermin_id)**
+- `wartelisteneintrag` (wl_id PK, mitglied_id FK, kurstermin_id FK, zeitstempel, position?, status[wartend|benachrichtigt|nachgerueckt|abgelaufen], benachrichtigt_am?, frist_bis?) — **partieller Unique-Index (mitglied_id, kurstermin_id) WHERE status IN ('wartend','benachrichtigt')** (max. ein aktiver Eintrag; Historie bleibt, Wieder-Anstellen möglich — FZ-002). `position` wird dynamisch aus `zeitstempel` berechnet, nicht gespeichert.
 
 ### Kurstermin-Status-Übergänge
 `geplant → verschoben`, `geplant → abgesagt`, `verschoben → abgesagt`.

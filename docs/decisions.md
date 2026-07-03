@@ -68,6 +68,36 @@ nach Storno** blockieren, weil die stornierte Zeile bestehen bleibt.
 
 ---
 
+## 2026-07-03 — FZ-002: Warteliste-Design (Obergrenze, Engine, Trigger)
+
+**Kontext:** Umsetzung BR2/BR3. Offene Punkte aus der Spec: konkreter Obergrenzen-
+Zahlwert und ob pro Termin/Kurstyp; „automatisches" Nachrücken nach 30 Min; Kanal.
+
+### Entscheidung
+- **Obergrenze `MAX_WARTELISTE = 5` pro Kurstermin** (Annahme aus spec-Beispiel §8;
+  „pro Termin" gewählt) — zentrale Konstante, mit Kundin zu bestätigen.
+- **Partieller Unique-Index** auf `wartelisteneintrag` (nur `wartend`/`benachrichtigt`)
+  statt vollem Unique — analog `buchung`; erlaubt Wieder-Anstellen nach `abgelaufen`.
+- **Nachrück-Engine `verarbeiteWarteliste(kt)`** (idempotent): verfallen lassen +
+  nachrücken; „freie Plätze" = kapazitaet − bestätigte − laufende Reservierungen
+  (`benachrichtigt` mit Frist). Ein Angebot reserviert seinen Platz für 30 Min.
+- **Zwei Trigger:** (1) frei werdender Platz → Storno ruft die Engine (**FZ-003**);
+  (2) Fristablauf → Cron-Endpoint `GET /api/cron/warteliste` (Bearer `CRON_SECRET`,
+  Vercel Cron / pg_cron).
+- **`position`** wird dynamisch aus `zeitstempel` berechnet, nicht gespeichert (keine Drift).
+- **Benachrichtigung** als Stub (`lib/notify.ts`); Kanal offen (BR2/BR8).
+
+### Alternativen verworfen
+- Gespeicherte `position` mit Umnummerierung bei jeder Änderung: fehleranfällig (Drift).
+- Reines Cron-Nachrücken ohne Storno-Trigger: würde freie Plätze erst verzögert vergeben.
+- Sofort-Nachrücken ohne 30-Min-Reservierung: widerspricht BR2 (Bestätigungsfenster).
+
+### Konsequenzen
+- Positiv: FIFO/Obergrenze tarif-unabhängig (BR3); Engine an mehreren Stellen wiederverwendbar; verifiziert (`verify:fz002`).
+- Negativ/Risiko: Live-Nachrücken bei frei werdendem Platz erst mit FZ-003 aktiv; Cron muss deployed/geplant werden, damit Fristen ohne Interaktion ablaufen.
+
+---
+
 ## 2026-07-03 — Tech-Stack festgelegt: Next.js + Supabase
 
 **Kontext:** Der Stack war bewusst offen (`architecture.md`). Anforderungen aus der Spec:

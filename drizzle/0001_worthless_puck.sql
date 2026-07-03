@@ -1,0 +1,2 @@
+ALTER TABLE "wartelisteneintrag" DROP CONSTRAINT "uq_warteliste_mitglied_termin";--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_warteliste_aktiv_mitglied_termin" ON "wartelisteneintrag" USING btree ("mitglied_id","kurstermin_id") WHERE "wartelisteneintrag"."status" in ('wartend', 'benachrichtigt');

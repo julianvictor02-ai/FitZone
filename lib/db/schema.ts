@@ -8,7 +8,6 @@ import {
   numeric,
   timestamp,
   date,
-  unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -160,7 +159,14 @@ export const wartelisteneintrag = pgTable(
     benachrichtigtAm: timestamp("benachrichtigt_am", { withTimezone: true }),
     fristBis: timestamp("frist_bis", { withTimezone: true }), // benachrichtigt_am + 30 Min
   },
-  (t) => [unique("uq_warteliste_mitglied_termin").on(t.mitgliedId, t.kursterminId)],
+  // Partieller Unique-Index: max. EIN aktiver Wartelisteneintrag pro Mitglied+Termin.
+  // Terminale Einträge (nachgerueckt/abgelaufen) bleiben als Historie, Wieder-
+  // Anstellen bleibt möglich (analog buchung, BR2).
+  (t) => [
+    uniqueIndex("uq_warteliste_aktiv_mitglied_termin")
+      .on(t.mitgliedId, t.kursterminId)
+      .where(sql`${t.status} in ('wartend', 'benachrichtigt')`),
+  ],
 );
 
 // Identität/Rolle: verknüpft ein Supabase-Auth-Konto mit einer Rolle und optional

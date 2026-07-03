@@ -28,7 +28,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | ID | Name | Phase | Status | Quelle | Notiz |
 |----|------|-------|--------|--------|-------|
 | FZ-001 | Online-Kursbuchung mit Auto-Bestätigung | 1 | done | spec.md §4 BR1, §7 | E2E gegen Supabase verifiziert: verify:fz001 (5/5 BR1) + verify-flow (Login→/kurse→Buchung→Anzeige) gegen laufende App. |
-| FZ-002 | Warteliste FIFO + Nachrücken + 30-Min-Fenster + harte Obergrenze | 1 | validated | spec.md §4 BR2/BR3 | Muss zeitgleich mit FZ-001 stehen. Obergrenze-Zahlwert offen. |
+| FZ-002 | Warteliste FIFO + Nachrücken + 30-Min-Fenster + harte Obergrenze | 1 | done | spec.md §4 BR2/BR3 | Engine + UI + Cron. Verifiziert (verify:fz002, alle Kriterien). Live-Trigger "Platz frei" via FZ-003 (Storno). Obergrenze=5/Termin (Annahme). |
 | FZ-003 | Selbst-Stornierung (Frist + Gebühren-Flag, keine Abbuchung) | 1 | validated | spec.md §4 BR5 | v1 nur `stornozeitpunkt` + Flag. |
 | FZ-004 | Anwesenheitserfassung mit Zeitstempel | 1 | validated | spec.md §2 (Buchung), §7 | Enum offen/anwesend/no_show/entschuldigt. |
 | FZ-005 | Trainer-Login: eigener Kursplan + Anwesenheit abhaken | 1 | validated | spec.md §3, §7 | Nur eigene Termine sichtbar. |

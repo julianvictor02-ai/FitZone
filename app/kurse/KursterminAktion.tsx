@@ -1,0 +1,121 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  bucheKursterminAction,
+  warteAction,
+  bestaetigeNachrueckungAction,
+} from "./actions";
+
+export type Zustand =
+  | "buchbar"
+  | "voll"
+  | "warteliste_voll"
+  | "gebucht"
+  | "wartend"
+  | "benachrichtigt";
+
+const MELDUNG: Record<string, string> = {
+  bestaetigt: "Gebucht ✓",
+  voll: "Ausgebucht",
+  bereits_gebucht: "Bereits gebucht",
+  kurs_nicht_buchbar: "Nicht buchbar",
+  nicht_angemeldet: "Bitte anmelden",
+  kein_mitglied: "Kein Mitglied-Profil",
+  wartend: "Auf Warteliste ✓",
+  platz_frei: "Platz frei — bitte buchen",
+  bereits_wartend: "Bereits auf Warteliste",
+  warteliste_voll: "Warteliste voll",
+  nachgerueckt: "Nachgerückt & gebucht ✓",
+  abgelaufen: "Frist abgelaufen",
+  kein_angebot: "Kein Nachrück-Angebot",
+};
+
+const AKTUALISIEREN = new Set([
+  "bestaetigt",
+  "wartend",
+  "nachgerueckt",
+  "abgelaufen",
+  "platz_frei",
+]);
+
+const btn = "rounded px-4 py-1.5 text-sm disabled:cursor-not-allowed";
+
+export function KursterminAktion({
+  kursterminId,
+  zustand,
+  position,
+  fristBisISO,
+}: {
+  kursterminId: string;
+  zustand: Zustand;
+  position?: number;
+  fristBisISO?: string;
+}) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [meldung, setMeldung] = useState<string | null>(null);
+
+  function run(action: () => Promise<{ status: string }>) {
+    start(async () => {
+      const r = await action();
+      setMeldung(MELDUNG[r.status] ?? r.status);
+      if (AKTUALISIEREN.has(r.status)) router.refresh();
+    });
+  }
+
+  const frist = fristBisISO
+    ? new Date(fristBisISO).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+    : null;
+
+  return (
+    <div className="flex items-center gap-3">
+      {zustand === "buchbar" && (
+        <button
+          onClick={() => run(() => bucheKursterminAction(kursterminId))}
+          disabled={pending}
+          className={`${btn} bg-black text-white disabled:bg-gray-300`}
+        >
+          {pending ? "…" : "Buchen"}
+        </button>
+      )}
+
+      {zustand === "voll" && (
+        <button
+          onClick={() => run(() => warteAction(kursterminId))}
+          disabled={pending}
+          className={`${btn} border border-black disabled:opacity-50`}
+        >
+          {pending ? "…" : "Warteliste beitreten"}
+        </button>
+      )}
+
+      {zustand === "benachrichtigt" && (
+        <button
+          onClick={() => run(() => bestaetigeNachrueckungAction(kursterminId))}
+          disabled={pending}
+          className={`${btn} bg-green-700 text-white disabled:bg-gray-300`}
+        >
+          {pending ? "…" : `Nachrücken bestätigen${frist ? ` (bis ${frist})` : ""}`}
+        </button>
+      )}
+
+      {zustand === "gebucht" && (
+        <span className="text-sm font-medium text-green-700">Gebucht ✓</span>
+      )}
+
+      {zustand === "wartend" && (
+        <span className="text-sm text-gray-600">
+          Warteliste · Position {position}
+        </span>
+      )}
+
+      {zustand === "warteliste_voll" && (
+        <span className="text-sm text-amber-700">Warteliste voll</span>
+      )}
+
+      {meldung && <span className="text-sm text-gray-600">{meldung}</span>}
+    </div>
+  );
+}

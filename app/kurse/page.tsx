@@ -2,8 +2,9 @@ import Link from "next/link";
 import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { requireRolle } from "@/lib/auth/benutzer";
 import { db } from "@/lib/db";
-import { buchung, kurstermin, kurstyp, trainer } from "@/lib/db/schema";
-import { BuchenButton } from "./BuchenButton";
+import { buchung, kurstermin, kurstyp, trainer, wartelisteneintrag } from "@/lib/db/schema";
+import { MAX_WARTELISTE } from "@/lib/booking/warteliste";
+import { KursterminAktion, type Zustand } from "./KursterminAktion";
 
 const DATUM = new Intl.DateTimeFormat("de-DE", {
   weekday: "short",
@@ -57,25 +58,16 @@ export default async function KursePage({
 
   const ids = termine.map((t) => t.kursterminId);
 
-  // Belegung (nur bestätigte Buchungen) und eigene Buchungen in je einer Abfrage.
   const belegung = ids.length
     ? await db
-        .select({
-          kursterminId: buchung.kursterminId,
-          anzahl: sql<number>`count(*)::int`,
-        })
+        .select({ kursterminId: buchung.kursterminId, anzahl: sql<number>`count(*)::int` })
         .from(buchung)
-        .where(
-          and(
-            inArray(buchung.kursterminId, ids),
-            eq(buchung.buchungsstatus, "bestaetigt"),
-          ),
-        )
+        .where(and(inArray(buchung.kursterminId, ids), eq(buchung.buchungsstatus, "bestaetigt")))
         .groupBy(buchung.kursterminId)
     : [];
   const belegungMap = new Map(belegung.map((b) => [b.kursterminId, b.anzahl]));
 
-  const meine = ids.length
+  const meineBuchungen = ids.length
     ? await db
         .select({ kursterminId: buchung.kursterminId })
         .from(buchung)
@@ -87,19 +79,46 @@ export default async function KursePage({
           ),
         )
     : [];
-  const meineSet = new Set(meine.map((m) => m.kursterminId));
+  const gebuchtSet = new Set(meineBuchungen.map((m) => m.kursterminId));
 
-  const filterLink = (wert: string | null) =>
-    wert ? `/kurse?modus=${wert}` : "/kurse";
+  // Aktive Warteliste (FIFO nach zeitstempel) für alle gelisteten Termine.
+  const wlAktiv = ids.length
+    ? await db
+        .select({
+          kursterminId: wartelisteneintrag.kursterminId,
+          mitgliedId: wartelisteneintrag.mitgliedId,
+          status: wartelisteneintrag.status,
+          fristBis: wartelisteneintrag.fristBis,
+        })
+        .from(wartelisteneintrag)
+        .where(
+          and(
+            inArray(wartelisteneintrag.kursterminId, ids),
+            inArray(wartelisteneintrag.status, ["wartend", "benachrichtigt"]),
+          ),
+        )
+        .orderBy(asc(wartelisteneintrag.zeitstempel))
+    : [];
+  const wlMap = new Map<string, typeof wlAktiv>();
+  for (const e of wlAktiv) {
+    let arr = wlMap.get(e.kursterminId);
+    if (!arr) {
+      arr = [];
+      wlMap.set(e.kursterminId, arr);
+    }
+    arr.push(e);
+  }
+
+  const filterLink = (wert: string | null) => (wert ? `/kurse?modus=${wert}` : "/kurse");
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="text-2xl font-bold">Kurse buchen</h1>
       <p className="mt-1 text-sm text-gray-500">
-        Freie Plätze werden nur als Anzahl angezeigt (keine Teilnehmernamen).
+        Freie Plätze als Anzahl (keine Namen). Volle Kurse: Warteliste (max.{" "}
+        {MAX_WARTELISTE}, FIFO).
       </p>
 
-      {/* Modus-Filter */}
       <nav className="mt-4 flex gap-2 text-sm">
         {[
           { label: "Alle", wert: null },
@@ -124,6 +143,27 @@ export default async function KursePage({
         {termine.map((t) => {
           const belegt = belegungMap.get(t.kursterminId) ?? 0;
           const frei = Math.max(0, t.kapazitaet - belegt);
+          const wl = wlMap.get(t.kursterminId) ?? [];
+          const meinIdx = wl.findIndex((e) => e.mitgliedId === mitgliedId);
+          const mein = meinIdx >= 0 ? wl[meinIdx] : null;
+
+          let zustand: Zustand;
+          let position: number | undefined;
+          let fristBisISO: string | undefined;
+          if (gebuchtSet.has(t.kursterminId)) {
+            zustand = "gebucht";
+          } else if (mein?.status === "benachrichtigt") {
+            zustand = "benachrichtigt";
+            fristBisISO = mein.fristBis?.toISOString();
+          } else if (mein?.status === "wartend") {
+            zustand = "wartend";
+            position = meinIdx + 1;
+          } else if (frei > 0) {
+            zustand = "buchbar";
+          } else {
+            zustand = wl.length >= MAX_WARTELISTE ? "warteliste_voll" : "voll";
+          }
+
           return (
             <li
               key={t.kursterminId}
@@ -132,20 +172,23 @@ export default async function KursePage({
               <div>
                 <div className="font-medium">
                   {t.kurstyp}{" "}
-                  <span className="text-sm font-normal text-gray-500">
-                    · {t.modus}
-                  </span>
+                  <span className="text-sm font-normal text-gray-500">· {t.modus}</span>
                 </div>
                 <div className="text-sm text-gray-500">
                   {DATUM.format(t.start)} Uhr · {t.trainer} ·{" "}
                   <span className={frei === 0 ? "text-amber-700" : ""}>
                     {frei} von {t.kapazitaet} frei
                   </span>
+                  {frei === 0 && wl.length > 0 && (
+                    <span> · Warteliste {wl.length}/{MAX_WARTELISTE}</span>
+                  )}
                 </div>
               </div>
-              <BuchenButton
+              <KursterminAktion
                 kursterminId={t.kursterminId}
-                bereitsGebucht={meineSet.has(t.kursterminId)}
+                zustand={zustand}
+                position={position}
+                fristBisISO={fristBisISO}
               />
             </li>
           );
