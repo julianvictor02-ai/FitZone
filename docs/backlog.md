@@ -27,7 +27,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 
 | ID | Name | Phase | Status | Quelle | Notiz |
 |----|------|-------|--------|--------|-------|
-| FZ-001 | Online-Kursbuchung mit Auto-Bestätigung | 1 | in-progress | spec.md §4 BR1, §7 | Logik lib/booking/buchung.ts + UI app/kurse. Fehlt nur Live-Verifikation gegen Supabase. |
+| FZ-001 | Online-Kursbuchung mit Auto-Bestätigung | 1 | in-progress | spec.md §4 BR1, §7 | Kernlogik gegen Supabase verifiziert (5/5 BR1-Kriterien, `npm run verify:fz001`). Offen: Login/UI-E2E im Browser. |
 | FZ-002 | Warteliste FIFO + Nachrücken + 30-Min-Fenster + harte Obergrenze | 1 | validated | spec.md §4 BR2/BR3 | Muss zeitgleich mit FZ-001 stehen. Obergrenze-Zahlwert offen. |
 | FZ-003 | Selbst-Stornierung (Frist + Gebühren-Flag, keine Abbuchung) | 1 | validated | spec.md §4 BR5 | v1 nur `stornozeitpunkt` + Flag. |
 | FZ-004 | Anwesenheitserfassung mit Zeitstempel | 1 | validated | spec.md §2 (Buchung), §7 | Enum offen/anwesend/no_show/entschuldigt. |
