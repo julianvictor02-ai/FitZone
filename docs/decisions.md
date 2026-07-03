@@ -5,6 +5,35 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-03 — FZ-001: partieller Unique-Index + atomare Kapazitätsprüfung
+
+**Kontext:** Umsetzung BR1 (Kursbuchung mit Auto-Bestätigung). Zwei Punkte:
+(1) Der ursprüngliche `Unique(mitglied_id, kurstermin_id)` würde eine **Neubuchung
+nach Storno** blockieren, weil die stornierte Zeile bestehen bleibt.
+(2) BR1 verlangt eine race-condition-sichere Kapazitätsprüfung (letzter Platz).
+
+### Entscheidung
+- **Partieller Unique-Index** `uq_buchung_aktiv_mitglied_termin` auf
+  `(mitglied_id, kurstermin_id) WHERE buchungsstatus='bestaetigt'` statt eines
+  vollen Unique-Constraints. Erlaubt: max. eine **aktive** Buchung, beliebig viele
+  stornierte Zeilen als Historie, Neubuchung nach Storno (jede mit eigenem,
+  unveränderbarem `buchungszeitpunkt`).
+- **Atomare Buchung** über Transaktion + `SELECT ... FOR UPDATE` auf die
+  Kurstermin-Zeile: serialisiert konkurrierende Buchungen desselben Termins.
+  Implementierung: `lib/booking/buchung.ts`.
+
+### Alternativen verworfen
+- Voller Unique-Constraint + Update der Storno-Zeile bei Neubuchung: würde den
+  „unveränderbaren" Nachweis-Zeitstempel überschreiben (Konflikt mit NFR).
+- `SERIALIZABLE`-Isolation statt Row-Lock: korrekt, aber mehr Retry-Handling nötig;
+  Row-Lock ist hier einfacher und ausreichend.
+
+### Konsequenzen
+- Positiv: Buchungshistorie bleibt erhalten; Nachweis-Zeitstempel unangetastet; keine Überbuchung.
+- Negativ/Risiko: Applikationslogik muss den Lock konsequent nutzen (nicht am Termin-Lock vorbei buchen). Migration `drizzle/0000` neu generiert (noch keine DB deployed).
+
+---
+
 ## 2026-07-03 — Tech-Stack festgelegt: Next.js + Supabase
 
 **Kontext:** Der Stack war bewusst offen (`architecture.md`). Anforderungen aus der Spec:

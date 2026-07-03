@@ -9,7 +9,9 @@ import {
   timestamp,
   date,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // Datenmodell FitZone — Quelle: docs/architecture.md / docs/spec.md §10.
 // Business Rules BR1–BR9 (Kapazität, Warteliste, Limits, Fristen) werden in der
@@ -129,7 +131,13 @@ export const buchung = pgTable(
     stornoGebuehrBetrag: numeric("storno_gebuehr_betrag", { precision: 10, scale: 2 }),
     trainerNotiz: text("trainer_notiz"),
   },
-  (t) => [unique("uq_buchung_mitglied_termin").on(t.mitgliedId, t.kursterminId)],
+  // Partieller Unique-Index: max. EINE aktive (bestaetigt) Buchung pro Mitglied+Termin.
+  // Stornierte Buchungen bleiben als Historie erhalten und erlauben Neubuchung (BR1).
+  (t) => [
+    uniqueIndex("uq_buchung_aktiv_mitglied_termin")
+      .on(t.mitgliedId, t.kursterminId)
+      .where(sql`${t.buchungsstatus} = 'bestaetigt'`),
+  ],
 );
 
 export const wartelisteneintrag = pgTable(

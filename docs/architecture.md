@@ -45,7 +45,7 @@ Aus `spec.md §10` übernommen (dort mit Quellen-Tags). Verbindliche Grundlage v
 - `on_demand_video` (video_id PK, titel, kurstyp_id FK?, level?, dauer_minuten?, mindest_tarif, plattform, url)
 
 ### Junction-Tabellen (n:m)
-- `buchung` (buchung_id PK, mitglied_id FK, kurstermin_id FK, buchungsstatus[bestaetigt|storniert], buchungszeitpunkt, stornozeitpunkt?, anwesenheit[offen|anwesend|no_show|entschuldigt], storno_gebuehr_faellig, storno_gebuehr_betrag?, trainer_notiz?) — **Unique(mitglied_id, kurstermin_id)**
+- `buchung` (buchung_id PK, mitglied_id FK, kurstermin_id FK, buchungsstatus[bestaetigt|storniert], buchungszeitpunkt, stornozeitpunkt?, anwesenheit[offen|anwesend|no_show|entschuldigt], storno_gebuehr_faellig, storno_gebuehr_betrag?, trainer_notiz?) — **partieller Unique-Index (mitglied_id, kurstermin_id) WHERE buchungsstatus='bestaetigt'** (max. eine aktive Buchung; Storno-Historie bleibt, Neubuchung möglich — siehe decisions.md 2026-07-03 FZ-001)
 - `wartelisteneintrag` (wl_id PK, mitglied_id FK, kurstermin_id FK, zeitstempel, position?, status[wartend|benachrichtigt|nachgerueckt|abgelaufen], benachrichtigt_am?, frist_bis?) — **Unique(mitglied_id, kurstermin_id)**
 
 ### Kurstermin-Status-Übergänge

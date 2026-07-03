@@ -1,5 +1,5 @@
 {
-  "id": "9441c00a-9ba0-420a-97e0-7a2590660006",
+  "id": "e652884d-6239-49ae-9fd0-661e7e2439a3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -76,7 +76,30 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "uq_buchung_aktiv_mitglied_termin": {
+          "name": "uq_buchung_aktiv_mitglied_termin",
+          "columns": [
+            {
+              "expression": "mitglied_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kurstermin_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"buchung\".\"buchungsstatus\" = 'bestaetigt'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "buchung_mitglied_id_mitglied_mitglied_id_fk": {
           "name": "buchung_mitglied_id_mitglied_mitglied_id_fk",
@@ -106,16 +129,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "uq_buchung_mitglied_termin": {
-          "name": "uq_buchung_mitglied_termin",
-          "nullsNotDistinct": false,
-          "columns": [
-            "mitglied_id",
-            "kurstermin_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

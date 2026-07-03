@@ -16,8 +16,7 @@ CREATE TABLE "buchung" (
 	"anwesenheit" "anwesenheit" DEFAULT 'offen' NOT NULL,
 	"storno_gebuehr_faellig" boolean DEFAULT false NOT NULL,
 	"storno_gebuehr_betrag" numeric(10, 2),
-	"trainer_notiz" text,
-	CONSTRAINT "uq_buchung_mitglied_termin" UNIQUE("mitglied_id","kurstermin_id")
+	"trainer_notiz" text
 );
 --> statement-breakpoint
 CREATE TABLE "kurstermin" (
@@ -98,4 +97,5 @@ ALTER TABLE "kurstermin" ADD CONSTRAINT "kurstermin_trainer_id_trainer_trainer_i
 ALTER TABLE "mitglied" ADD CONSTRAINT "mitglied_tarif_id_tarif_tarif_id_fk" FOREIGN KEY ("tarif_id") REFERENCES "public"."tarif"("tarif_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "on_demand_video" ADD CONSTRAINT "on_demand_video_kurstyp_id_kurstyp_kurstyp_id_fk" FOREIGN KEY ("kurstyp_id") REFERENCES "public"."kurstyp"("kurstyp_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "wartelisteneintrag" ADD CONSTRAINT "wartelisteneintrag_mitglied_id_mitglied_mitglied_id_fk" FOREIGN KEY ("mitglied_id") REFERENCES "public"."mitglied"("mitglied_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "wartelisteneintrag" ADD CONSTRAINT "wartelisteneintrag_kurstermin_id_kurstermin_kurstermin_id_fk" FOREIGN KEY ("kurstermin_id") REFERENCES "public"."kurstermin"("kurstermin_id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "wartelisteneintrag" ADD CONSTRAINT "wartelisteneintrag_kurstermin_id_kurstermin_kurstermin_id_fk" FOREIGN KEY ("kurstermin_id") REFERENCES "public"."kurstermin"("kurstermin_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_buchung_aktiv_mitglied_termin" ON "buchung" USING btree ("mitglied_id","kurstermin_id") WHERE "buchung"."buchungsstatus" = 'bestaetigt';
