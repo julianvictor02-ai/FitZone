@@ -9,17 +9,25 @@ Entscheidungen mit Begründung siehe `docs/decisions.md`.
 
 ## Tech-Stack
 
-> **Status: offen / noch nicht entschieden.** Die Spec gibt keinen Stack vor
-> („Vibe Coding"). Vor Implementierungsbeginn festlegen und als Entscheidung in
-> `decisions.md` protokollieren.
+Festgelegt am 2026-07-03 (siehe `decisions.md`). **Next.js + Supabase.**
 
-Harte Rahmenbedingungen an jeden gewählten Stack (aus der Spec ableitbar):
+| Ebene | Wahl |
+|-------|------|
+| Sprache/Framework | TypeScript, Next.js (App Router) — FE + BE (Route Handlers / Server Actions) |
+| Datenbank | PostgreSQL via Supabase |
+| Auth/RBAC | Supabase Auth + Row Level Security (Rollen: Admin/Trainer/Mitglied) |
+| ORM | Drizzle |
+| Jobs/Timer | Supabase Edge Functions / `pg_cron` (30-Min-Nachrück-Fenster, BR2) |
+| Mail/Benachrichtigung | Resend (Kanal endgültig offen, `spec.md §8`) |
+| Deployment | Vercel |
 
-- **Relationale DB / transaktionale Integrität** — atomare Kapazitätsprüfung, Unique-Constraints (BR1, BR2).
-- **Server-seitige Business-Logik** — Validierungen dürfen nicht clientseitig umgehbar sein.
-- **Rollenbasierte Zugriffskontrolle (RBAC)** — 3 Rollen: Admin, Trainer, Mitglied.
-- **Job-/Timer-Mechanismus** — 30-Min-Nachrück-Fenster der Warteliste (BR2).
-- **Benachrichtigungs-Anbindung** — Kanal (Push/E-Mail/SMS) noch offen (BR8, BR2).
+Diese Wahl deckt die harten Rahmenbedingungen der Spec ab:
+
+- **Relationale DB / transaktionale Integrität** — atomare Kapazitätsprüfung, Unique-Constraints (BR1, BR2). Explizit per Transaktion/DB-Constraint absichern, nicht dem ORM überlassen.
+- **Server-seitige Business-Logik** — Validierungen in Server Actions / Route Handlers, nicht clientseitig umgehbar.
+- **Rollenbasierte Zugriffskontrolle (RBAC)** — 3 Rollen, DB-seitig via RLS erzwungen.
+- **Job-/Timer-Mechanismus** — `pg_cron` / Edge Functions für das 30-Min-Fenster (BR2).
+- **Sichtbarkeit/Datenschutz** — nur eigene Daten + nur Zahl freier Plätze via RLS (Cross-Member-/Cross-Trainer-Zugriff testen).
 - **Single-Tenant** (nur FitZone) als Arbeitsannahme v1.
 
 ---

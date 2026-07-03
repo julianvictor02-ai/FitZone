@@ -17,7 +17,7 @@ Solo-Projekt. Keine `meetings/`, `results/`, `team/`, `INBOX.md` — bewusst weg
 → Lies **docs/backlog.md** (Feature-IDs `FZ-NNN` + Status).
 
 ## Tech-Stack + Standards
-→ Lies **docs/architecture.md** (Datenmodell steht fest; Stack noch offen).
+→ Lies **docs/architecture.md** (Datenmodell + Stack stehen fest: Next.js + Supabase, TypeScript, Drizzle).
 
 ## Architektur- & Produkt-Entscheidungen
 → Lies **docs/decisions.md** (u. a. aufgelöste Widersprüche W1–W4 aus der Spec).

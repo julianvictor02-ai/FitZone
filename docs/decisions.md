@@ -5,6 +5,32 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-03 — Tech-Stack festgelegt: Next.js + Supabase
+
+**Kontext:** Der Stack war bewusst offen (`architecture.md`). Anforderungen aus der Spec:
+relationale DB mit Transaktionen (atomare Kapazitätsprüfung, BR1/BR2), RBAC für 3 Rollen
+(Admin/Trainer/Mitglied), Background-Jobs für das 30-Min-Nachrück-Fenster (BR2),
+Benachrichtigungen (BR8) und unveränderbare Zeitstempel (NFR). Solo-Projekt, MVP, „Vibe Coding".
+
+### Entscheidung
+- **Sprache/Framework:** TypeScript, **Next.js** (App Router) für Frontend + Backend (Route Handlers / Server Actions).
+- **Datenbank:** **PostgreSQL via Supabase** — Transaktionen + Constraints (`Unique(mitglied_id, kurstermin_id)`, atomare Kapazitätsprüfung).
+- **Auth/RBAC:** **Supabase Auth + Row Level Security** — Rollen Admin/Trainer/Mitglied; Sichtbarkeitsregeln (nur eigene Daten, nur Zahl freier Plätze) DB-seitig via RLS erzwungen.
+- **ORM:** **Drizzle** (typisiert, leichtgewichtig). Prisma als Alternative verworfen (schwerer, aber austauschbar — geringe Tragweite).
+- **Jobs/Timer:** Supabase Edge Functions bzw. `pg_cron` für das 30-Min-Fenster.
+- **Mail/Benachrichtigung:** Resend (Kanal endgültig offen, siehe `spec.md §8`).
+- **Deployment:** Vercel.
+
+### Alternativen verworfen
+- **Next.js + eigene/selbst gehostete Postgres (Auth.js):** mehr Kontrolle, aber deutlich mehr Eigenbau (Auth, Jobs, RLS) — für Solo-MVP unnötig.
+- **Python + FastAPI:** starke Backend-Trennung, aber zwei getrennte FE/BE-Teile = mehr Overhead; kein Vorteil gegenüber integriertem Next.js hier.
+
+### Konsequenzen
+- Positiv: Auth, DB und RLS gebündelt → schneller MVP; RBAC/Datenschutz-Regeln direkt in der DB; wenig Infrastruktur-Setup solo.
+- Negativ/Risiko: Plattformbindung an Supabase; RLS-Regeln müssen sorgfältig getestet werden (Cross-Member-/Cross-Trainer-Zugriff); atomare Kapazitätsprüfung explizit per Transaktion/Constraint absichern, nicht dem ORM überlassen.
+
+---
+
 ## 2026-07-03 — Projekt nach Modus Operandi (Solo) aufgesetzt
 
 **Kontext:** Doku-Struktur für die FitZone-App nach der Methodik
