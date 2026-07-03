@@ -15,7 +15,8 @@ Festgelegt am 2026-07-03 (siehe `decisions.md`). **Next.js + Supabase.**
 |-------|------|
 | Sprache/Framework | TypeScript, Next.js (App Router) — FE + BE (Route Handlers / Server Actions) |
 | Datenbank | PostgreSQL via Supabase |
-| Auth/RBAC | Supabase Auth + Row Level Security (Rollen: Admin/Trainer/Mitglied) |
+| Auth | Supabase Auth (E-Mail/Passwort) |
+| RBAC | App-seitige Guards (`requireRolle`) über `benutzer`-Tabelle; RLS als späteres Defense-in-Depth (Rollen: Admin/Trainer/Mitglied) |
 | ORM | Drizzle |
 | Jobs/Timer | Supabase Edge Functions / `pg_cron` (30-Min-Nachrück-Fenster, BR2) |
 | Mail/Benachrichtigung | Resend (Kanal endgültig offen, `spec.md §8`) |
@@ -25,9 +26,9 @@ Diese Wahl deckt die harten Rahmenbedingungen der Spec ab:
 
 - **Relationale DB / transaktionale Integrität** — atomare Kapazitätsprüfung, Unique-Constraints (BR1, BR2). Explizit per Transaktion/DB-Constraint absichern, nicht dem ORM überlassen.
 - **Server-seitige Business-Logik** — Validierungen in Server Actions / Route Handlers, nicht clientseitig umgehbar.
-- **Rollenbasierte Zugriffskontrolle (RBAC)** — 3 Rollen, DB-seitig via RLS erzwungen.
+- **Rollenbasierte Zugriffskontrolle (RBAC)** — 3 Rollen; primär app-seitig via `requireRolle` erzwungen (Drizzle-Service-Connection umgeht RLS), RLS als Folge-Härtung. Siehe decisions.md 2026-07-03 FZ-006.
 - **Job-/Timer-Mechanismus** — `pg_cron` / Edge Functions für das 30-Min-Fenster (BR2).
-- **Sichtbarkeit/Datenschutz** — nur eigene Daten + nur Zahl freier Plätze via RLS (Cross-Member-/Cross-Trainer-Zugriff testen).
+- **Sichtbarkeit/Datenschutz** — nur eigene Daten + nur Zahl freier Plätze; app-seitig in Queries erzwingen, später zusätzlich RLS (Cross-Member-/Cross-Trainer-Zugriff testen).
 - **Single-Tenant** (nur FitZone) als Arbeitsannahme v1.
 
 ---
@@ -43,6 +44,7 @@ Aus `spec.md §10` übernommen (dort mit Quellen-Tags). Verbindliche Grundlage v
 - `kurstyp` (kurstyp_id PK, name, standard_kapazitaet_studio?, standard_kapazitaet_livestream?)
 - `kurstermin` (kurstermin_id PK, kurstyp_id FK, trainer_id FK, modus[Studio|Livestream], start, kapazitaet, status[geplant|abgesagt|verschoben], stream_link?)
 - `on_demand_video` (video_id PK, titel, kurstyp_id FK?, level?, dauer_minuten?, mindest_tarif, plattform, url)
+- `benutzer` (benutzer_id PK = Supabase auth.users.id, email unique, rolle[admin|trainer|mitglied], mitglied_id FK?, trainer_id FK?, erstellt_am) — Identität/Rolle; ergänzt das Spec-Modell (FZ-006). Admin ohne mitglied_id/trainer_id.
 
 ### Junction-Tabellen (n:m)
 - `buchung` (buchung_id PK, mitglied_id FK, kurstermin_id FK, buchungsstatus[bestaetigt|storniert], buchungszeitpunkt, stornozeitpunkt?, anwesenheit[offen|anwesend|no_show|entschuldigt], storno_gebuehr_faellig, storno_gebuehr_betrag?, trainer_notiz?) — **partieller Unique-Index (mitglied_id, kurstermin_id) WHERE buchungsstatus='bestaetigt'** (max. eine aktive Buchung; Storno-Historie bleibt, Neubuchung möglich — siehe decisions.md 2026-07-03 FZ-001)

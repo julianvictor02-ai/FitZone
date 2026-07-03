@@ -1,9 +1,95 @@
 {
-  "id": "e652884d-6239-49ae-9fd0-661e7e2439a3",
+  "id": "132b9c4d-ead8-4ca6-9497-1c40d38fe7e3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.benutzer": {
+      "name": "benutzer",
+      "schema": "",
+      "columns": {
+        "benutzer_id": {
+          "name": "benutzer_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rolle": {
+          "name": "rolle",
+          "type": "rolle",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mitglied_id": {
+          "name": "mitglied_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trainer_id": {
+          "name": "trainer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "erstellt_am": {
+          "name": "erstellt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "benutzer_mitglied_id_mitglied_mitglied_id_fk": {
+          "name": "benutzer_mitglied_id_mitglied_mitglied_id_fk",
+          "tableFrom": "benutzer",
+          "tableTo": "mitglied",
+          "columnsFrom": [
+            "mitglied_id"
+          ],
+          "columnsTo": [
+            "mitglied_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "benutzer_trainer_id_trainer_trainer_id_fk": {
+          "name": "benutzer_trainer_id_trainer_trainer_id_fk",
+          "tableFrom": "benutzer",
+          "tableTo": "trainer",
+          "columnsFrom": [
+            "trainer_id"
+          ],
+          "columnsTo": [
+            "trainer_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "benutzer_email_unique": {
+          "name": "benutzer_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.buchung": {
       "name": "buchung",
       "schema": "",
@@ -693,6 +779,15 @@
       "values": [
         "Studio",
         "Livestream"
+      ]
+    },
+    "public.rolle": {
+      "name": "rolle",
+      "schema": "public",
+      "values": [
+        "admin",
+        "trainer",
+        "mitglied"
       ]
     },
     "public.tarif_name": {

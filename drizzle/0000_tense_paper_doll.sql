@@ -4,8 +4,19 @@ CREATE TYPE "public"."kurstermin_status" AS ENUM('geplant', 'abgesagt', 'verscho
 CREATE TYPE "public"."kurstyp_name" AS ENUM('Yoga', 'Pilates', 'Spinning', 'HIIT', 'Bodyworkout');--> statement-breakpoint
 CREATE TYPE "public"."mitglied_status" AS ENUM('aktiv', 'pausiert');--> statement-breakpoint
 CREATE TYPE "public"."modus" AS ENUM('Studio', 'Livestream');--> statement-breakpoint
+CREATE TYPE "public"."rolle" AS ENUM('admin', 'trainer', 'mitglied');--> statement-breakpoint
 CREATE TYPE "public"."tarif_name" AS ENUM('Basic', 'Plus', 'Premium');--> statement-breakpoint
 CREATE TYPE "public"."warteliste_status" AS ENUM('wartend', 'benachrichtigt', 'nachgerueckt', 'abgelaufen');--> statement-breakpoint
+CREATE TABLE "benutzer" (
+	"benutzer_id" uuid PRIMARY KEY NOT NULL,
+	"email" text NOT NULL,
+	"rolle" "rolle" NOT NULL,
+	"mitglied_id" uuid,
+	"trainer_id" uuid,
+	"erstellt_am" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "benutzer_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
 CREATE TABLE "buchung" (
 	"buchung_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"mitglied_id" uuid NOT NULL,
@@ -90,6 +101,8 @@ CREATE TABLE "wartelisteneintrag" (
 	CONSTRAINT "uq_warteliste_mitglied_termin" UNIQUE("mitglied_id","kurstermin_id")
 );
 --> statement-breakpoint
+ALTER TABLE "benutzer" ADD CONSTRAINT "benutzer_mitglied_id_mitglied_mitglied_id_fk" FOREIGN KEY ("mitglied_id") REFERENCES "public"."mitglied"("mitglied_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "benutzer" ADD CONSTRAINT "benutzer_trainer_id_trainer_trainer_id_fk" FOREIGN KEY ("trainer_id") REFERENCES "public"."trainer"("trainer_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "buchung" ADD CONSTRAINT "buchung_mitglied_id_mitglied_mitglied_id_fk" FOREIGN KEY ("mitglied_id") REFERENCES "public"."mitglied"("mitglied_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "buchung" ADD CONSTRAINT "buchung_kurstermin_id_kurstermin_kurstermin_id_fk" FOREIGN KEY ("kurstermin_id") REFERENCES "public"."kurstermin"("kurstermin_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "kurstermin" ADD CONSTRAINT "kurstermin_kurstyp_id_kurstyp_kurstyp_id_fk" FOREIGN KEY ("kurstyp_id") REFERENCES "public"."kurstyp"("kurstyp_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

@@ -46,6 +46,7 @@ export const wartelisteStatus = pgEnum("warteliste_status", [
   "nachgerueckt",
   "abgelaufen",
 ]);
+export const rolle = pgEnum("rolle", ["admin", "trainer", "mitglied"]);
 
 // --- Kern-Tabellen ---
 export const tarif = pgTable("tarif", {
@@ -161,3 +162,17 @@ export const wartelisteneintrag = pgTable(
   },
   (t) => [unique("uq_warteliste_mitglied_termin").on(t.mitgliedId, t.kursterminId)],
 );
+
+// Identität/Rolle: verknüpft ein Supabase-Auth-Konto mit einer Rolle und optional
+// mit einem Mitglied- oder Trainer-Datensatz. Admin hat weder mitglied_id noch
+// trainer_id. benutzer_id = auth.users.id (wird beim Anlegen explizit gesetzt).
+export const benutzer = pgTable("benutzer", {
+  benutzerId: uuid("benutzer_id").primaryKey(),
+  email: text("email").notNull().unique(),
+  rolle: rolle("rolle").notNull(),
+  mitgliedId: uuid("mitglied_id").references(() => mitglied.mitgliedId),
+  trainerId: uuid("trainer_id").references(() => trainer.trainerId),
+  erstelltAm: timestamp("erstellt_am", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

@@ -32,7 +32,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-003 | Selbst-Stornierung (Frist + Gebühren-Flag, keine Abbuchung) | 1 | validated | spec.md §4 BR5 | v1 nur `stornozeitpunkt` + Flag. |
 | FZ-004 | Anwesenheitserfassung mit Zeitstempel | 1 | validated | spec.md §2 (Buchung), §7 | Enum offen/anwesend/no_show/entschuldigt. |
 | FZ-005 | Trainer-Login: eigener Kursplan + Anwesenheit abhaken | 1 | validated | spec.md §3, §7 | Nur eigene Termine sichtbar. |
-| FZ-006 | Mitgliederstammdaten (Tarif/Status), admin-gepflegt | 1 | validated | spec.md §2, §7 | Basis für alles Weitere. |
+| FZ-006 | Mitgliederstammdaten (Tarif/Status), admin-gepflegt | 1 | in-progress | spec.md §2, §7 | Konzept: concepts/FZ-006-mitgliederstammdaten.md. Inkl. Auth/Rollen (benutzer-Tabelle). Login-Provisionierung + RLS offen. |
 | FZ-007 | Mitglieder-Selbstansicht (read-only Dashboard) | 1 | validated | spec.md §7, §11 | Tarif, mitgliedschaft_bis, eigene Buchungen. |
 | FZ-008 | Buchungsnachweis/Zeitstempel für alle Vorgänge | 1 | validated | spec.md §6 (NFR) | „Nicht verhandelbar", auditierbar. |
 | FZ-009 | Auto-Benachrichtigung bei Kursausfall/-verschiebung | 1 | validated | spec.md §4 BR8 | Kanal (Push/E-Mail/SMS) offen. |

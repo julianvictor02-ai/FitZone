@@ -5,6 +5,40 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-03 — FZ-006: Identitätsmodell (benutzer) + app-seitige Autorisierung
+
+**Kontext:** FZ-006 (Mitgliederstammdaten, admin-gepflegt) braucht eine Auth-/Rollen-
+Grundlage. Zwei Fragen: (1) Wie werden Rollen und die Verknüpfung Auth↔Domäne
+modelliert? (2) Wo wird die Autorisierung erzwungen?
+
+### Entscheidung
+- **`benutzer`-Tabelle** als zentrales Identitätsmodell: `benutzer_id` = Supabase
+  `auth.users.id`, `rolle`-Enum (`admin`/`trainer`/`mitglied`), optionale FKs
+  `mitglied_id` / `trainer_id`. Admin hat keine der beiden FKs.
+- **Autorisierung primär app-seitig** über Guards in Server Components / Server
+  Actions (`requireRolle` in `lib/auth/benutzer.ts`). Grund: Runtime-Queries laufen
+  über Drizzle mit einer Postgres-**Service-Connection**, die RLS umgeht.
+- **RLS** wird als späteres Defense-in-Depth ergänzt (eigener Folge-Task), nicht als
+  primäre Durchsetzung. Korrigiert die frühere Notiz „RBAC via RLS" in architecture.md.
+
+### Alternativen verworfen
+- Rolle als Spalte auf `mitglied`/`trainer`: kein Platz für Admin (hat keinen
+  Domänen-Datensatz); Auth↔Domäne bliebe unklar.
+- Rollen nur in Supabase `app_metadata` (JWT-Claims): schwerer testbar/joinbar,
+  keine referenzielle Integrität zu mitglied/trainer.
+- Datenzugriff komplett über den Supabase-Client (RLS-durchgesetzt) statt Drizzle:
+  unvereinbar mit der transaktionalen Buchungslogik (FOR-UPDATE, FZ-001).
+
+### Konsequenzen
+- Positiv: klares, joinbares Identitätsmodell; eine Stelle für Rollenprüfungen;
+  kompatibel mit der Drizzle-Transaktionslogik.
+- Negativ/Risiko: Autorisierung muss in **jeder** Server Action/Route konsequent
+  aufgerufen werden (kein DB-Netz darunter, bis RLS ergänzt ist). `benutzer_id` muss
+  beim Anlegen exakt der auth.users.id entsprechen. Mitglieder-Login-Provisionierung
+  (Konto ↔ mitglied ↔ benutzer) ist noch offen.
+
+---
+
 ## 2026-07-03 — FZ-001: partieller Unique-Index + atomare Kapazitätsprüfung
 
 **Kontext:** Umsetzung BR1 (Kursbuchung mit Auto-Bestätigung). Zwei Punkte:
