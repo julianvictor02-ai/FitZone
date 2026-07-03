@@ -7,7 +7,7 @@ Selbst-Buchung mit Auto-Bestätigung, FIFO-Warteliste mit Nachrücken, Selbst-St
 Anwesenheitserfassung und rollenbasierte Rechte (Admin/Trainer/Mitglied).
 
 ## Deadline
-Offen — Modul „Smart Applications" (BWL 8). → In `docs/spec.md` bzw. `docs/decisions.md` fixieren, sobald bekannt.
+**26.07.2026** — Abgabe im Modul „Smart Applications" (BWL 8).
 
 ## Setup
 Solo-Projekt. Keine `meetings/`, `results/`, `team/`, `INBOX.md` — bewusst weggelassen (siehe `docs/modus-operandi.md`).
