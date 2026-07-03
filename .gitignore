@@ -8,3 +8,26 @@
 .vscode/
 .idea/
 *.swp
+
+# Dependencies
+/node_modules
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Production
+/build
+
+# Env (Secrets)
+.env
+.env*.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
