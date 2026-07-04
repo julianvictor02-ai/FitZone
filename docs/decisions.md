@@ -5,6 +5,44 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-012: Trainer-Notizen — Wiederverwendung der Anwesenheits-Mechanik
+
+**Kontext:** FZ-012 (Trainer-Notizen zu Teilnehmern, §7 Should-have, Start Phase 2).
+Spec §2 hat die Spalte `buchung.trainer_notiz`; §2b erlaubt dem Trainer auf Buchungen
+eigener Kurse ausschließlich `U` auf `anwesenheit` + `trainer_notiz`. Offen: Timing
+(nur nach Kurs wie die Anwesenheit?), Struktur (Freitext vs. mehrere Notizen).
+
+### Entscheidung
+- **Kein Schema-Change** — die Spalte existiert. Engine `lib/trainer/notiz.ts`
+  (`setzeTrainerNotiz`) spiegelt `erfasseAnwesenheit` (FZ-004): identische
+  Ownership-Prüfung (§2b) und „nur aktive Buchung"; gleiche Fehler-Semantik
+  (`nicht_dein_kurs`/`keine_buchung`/`kurs_nicht_gefunden`).
+- **Freitext, einzelnes Feld pro Teilnehmer/Termin.** Leere/whitespace-Eingabe **löscht**
+  die Notiz (null). Kein Verlauf/keine Mehrfach-Notizen (nicht angefordert).
+- **Keine Zeitgrenze** (anders als die Anwesenheit): eine Beobachtung wie „wirkte
+  verletzt" ist keine Nach-Kurs-Aktion und darf jederzeit gesetzt/geändert werden.
+- **UI** `app/trainer/TrainerNotiz.tsx` (Client, Textarea + Speichern/Löschen) je
+  Teilnehmer, unter der Anwesenheits-Zeile; Action `setzeTrainerNotizAction` löst die
+  Trainer-Identität aus der Session (wie die Anwesenheits-Action).
+
+### Alternativen verworfen
+- Notiz an die Zeitgrenze der Anwesenheit koppeln (erst ab Kursbeginn): unnötige
+  Einschränkung; Notizen können auch vorab/organisatorisch entstehen.
+- Eigene `trainer_notiz`-Tabelle (Verlauf, mehrere Notizen): über den Bedarf hinaus
+  (Simplicity); die Freitext-Spalte deckt „z. B. wirkte verletzt" ab.
+- Notizen ins Nachweis-Log (FZ-008) aufnehmen: Notiz ist editierbarer Freitext, kein
+  zeitgestempelter Vorgang — gehört nicht in das unveränderbare Audit-Log.
+
+### Konsequenzen
+- Positiv: konsistent mit der Anwesenheits-Mechanik; Isolation verifiziert
+  (`verify:fz012`, 9/9: setzen/ändern/trimmen/löschen, fremder Trainer wirkungslos,
+  Nicht-Teilnehmer/unbekannter Kurs abgewiesen); `next build` grün. Startet Phase 2.
+- Negativ/Risiko: Sichtbarkeit rein app-seitig (kein RLS-Netz, wie projektweit).
+  Notizen sind personenbezogene Freitexte (DSGVO, spec §6 offen) — bei Bedarf später
+  Aufbewahrung/Löschkonzept ergänzen.
+
+---
+
 ## 2026-07-04 — FZ-008: Buchungsnachweis — Konsolidierung statt neuer Zeitstempel
 
 **Kontext:** §6 NFR / §7: „Buchungsnachweis/Zeitstempel für alle Vorgänge", „nicht

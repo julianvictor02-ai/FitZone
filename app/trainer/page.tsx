@@ -3,6 +3,7 @@ import { requireRolle } from "@/lib/auth/benutzer";
 import { db } from "@/lib/db";
 import { buchung, kurstermin, kurstyp, mitglied } from "@/lib/db/schema";
 import { AnwesenheitAktion } from "./AnwesenheitAktion";
+import { TrainerNotiz } from "./TrainerNotiz";
 import type { AnwesenheitWert } from "@/lib/attendance/anwesenheit";
 
 // FZ-005 — Trainer-Login: eigener Kursplan + Anwesenheit abhaken.
@@ -65,6 +66,7 @@ export default async function TrainerPage() {
           mitgliedId: buchung.mitgliedId,
           name: mitglied.name,
           anwesenheit: buchung.anwesenheit,
+          notiz: buchung.trainerNotiz,
         })
         .from(buchung)
         .innerJoin(mitglied, eq(buchung.mitgliedId, mitglied.mitgliedId))
@@ -115,16 +117,20 @@ export default async function TrainerPage() {
 
               <ul className="mt-3 divide-y divide-gray-100">
                 {liste.map((tn) => (
-                  <li
-                    key={tn.mitgliedId}
-                    className="flex flex-wrap items-center justify-between gap-3 py-2"
-                  >
-                    <span className="text-sm">{tn.name}</span>
-                    <AnwesenheitAktion
+                  <li key={tn.mitgliedId} className="py-2">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-sm">{tn.name}</span>
+                      <AnwesenheitAktion
+                        kursterminId={t.kursterminId}
+                        mitgliedId={tn.mitgliedId}
+                        aktuell={tn.anwesenheit as AnwesenheitWert}
+                        erfassbar={erfassbar}
+                      />
+                    </div>
+                    <TrainerNotiz
                       kursterminId={t.kursterminId}
                       mitgliedId={tn.mitgliedId}
-                      aktuell={tn.anwesenheit as AnwesenheitWert}
-                      erfassbar={erfassbar}
+                      notiz={tn.notiz}
                     />
                   </li>
                 ))}
