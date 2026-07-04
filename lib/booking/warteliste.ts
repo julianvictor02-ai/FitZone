@@ -127,13 +127,17 @@ export async function warteAufKurstermin(
  * Idempotent — aufrufbar nach Storno (Platz frei) und periodisch per Cron (Ablauf).
  */
 export async function verarbeiteWarteliste(kursterminId: string): Promise<number> {
-  return db.transaction(async (tx) => {
+  // In der Transaktion gesammelte Angebote; Versand erst NACH dem Commit, damit kein
+  // Netzwerk-I/O (Push) unter dem Kurstermin-Lock läuft (blockiert sonst Buchungen).
+  const angebote: { mitgliedId: string; fristBis: Date }[] = [];
+
+  await db.transaction(async (tx) => {
     const [termin] = await tx
       .select({ kapazitaet: kurstermin.kapazitaet, status: kurstermin.status })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
-    if (!termin || termin.status !== "geplant") return 0;
+    if (!termin || termin.status !== "geplant") return;
 
     const jetzt = new Date();
 
@@ -150,7 +154,6 @@ export async function verarbeiteWarteliste(kursterminId: string): Promise<number
       );
 
     // 2. Nachrücken, solange Plätze frei sind (bestätigt + laufende Reservierungen).
-    let nachgerueckt = 0;
     for (;;) {
       const belegt = await bestaetigteBelegung(tx, kursterminId);
       const [{ reserviert }] = await tx
@@ -185,12 +188,14 @@ export async function verarbeiteWarteliste(kursterminId: string): Promise<number
         .set({ status: "benachrichtigt", benachrichtigtAm: jetzt, fristBis })
         .where(eq(wartelisteneintrag.wlId, naechster.id));
 
-      await benachrichtige("nachrueck_angebot", naechster.mitgliedId, { kursterminId, fristBis });
-      nachgerueckt++;
+      angebote.push({ mitgliedId: naechster.mitgliedId, fristBis });
     }
-
-    return nachgerueckt;
   });
+
+  for (const a of angebote) {
+    await benachrichtige("nachrueck_angebot", a.mitgliedId, { kursterminId, fristBis: a.fristBis });
+  }
+  return angebote.length;
 }
 
 /**
