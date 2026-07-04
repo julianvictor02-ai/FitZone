@@ -15,7 +15,8 @@ export type Zustand =
   | "warteliste_voll"
   | "gebucht"
   | "wartend"
-  | "benachrichtigt";
+  | "benachrichtigt"
+  | "livestream_gesperrt";
 
 const MELDUNG: Record<string, string> = {
   bestaetigt: "Gebucht ✓",
@@ -32,6 +33,7 @@ const MELDUNG: Record<string, string> = {
   nachgerueckt: "Nachgerückt & gebucht ✓",
   abgelaufen: "Frist abgelaufen",
   kein_angebot: "Kein Nachrück-Angebot",
+  livestream_gesperrt: "Livestreams nur ab Plus",
 };
 
 const AKTUALISIEREN = new Set([
@@ -139,6 +141,15 @@ export function KursterminAktion({
 
       {zustand === "warteliste_voll" && (
         <span className="text-sm text-amber-700">Warteliste voll</span>
+      )}
+
+      {zustand === "livestream_gesperrt" && (
+        <span
+          className="text-sm text-gray-500"
+          title="Livestream-Kurse sind ab Tarif Plus buchbar"
+        >
+          Nur ab Plus
+        </span>
       )}
 
       {meldung && <span className="text-sm text-gray-600">{meldung}</span>}

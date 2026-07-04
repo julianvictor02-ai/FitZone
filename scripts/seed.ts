@@ -8,12 +8,13 @@ async function seed() {
   await db
     .insert(tarif)
     .values([
-      // Basic: 5 Buchungen/Monat, kein On-Demand, Livestream unklar (spec §8).
+      // Basic: 5 Buchungen/Monat, kein On-Demand, kein Livestream (nur Studio) —
+      // Kundenentscheidung Lisa 2026-07-04 (spec §8, Frage 4).
       {
         name: "Basic",
         buchungslimitProMonat: 5,
         onDemandZugriff: false,
-        livestreamZugriff: null,
+        livestreamZugriff: false,
         stornoGebuehrBefreit: false,
         earlyAccess: false,
       },

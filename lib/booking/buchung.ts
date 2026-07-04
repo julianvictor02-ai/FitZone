@@ -1,7 +1,8 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { buchung, kurstermin } from "@/lib/db/schema";
+import { buchung, kurstermin, mitglied, tarif } from "@/lib/db/schema";
 import { pruefeMonatslimit } from "@/lib/booking/limit";
+import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 
 // FZ-001 — Kursbuchung mit Auto-Bestätigung (Business Rule BR1).
 // Konzept: docs/concepts/FZ-001-kursbuchung.md
@@ -11,6 +12,7 @@ export type BuchungErgebnis =
   | { status: "voll" } //           Kurs ausgebucht → Warteliste anbieten (FZ-002)
   | { status: "bereits_gebucht" } // aktive Buchung existiert bereits
   | { status: "limit_erreicht"; limit: number } // Monatslimit des Tarifs erreicht (BR4)
+  | { status: "livestream_gesperrt" } // Basic darf keine Livestreams buchen (BR7/FZ-018)
   | { status: "kurs_nicht_buchbar" }; // Termin fehlt / abgesagt / verschoben
 
 /**
@@ -31,6 +33,7 @@ export async function bucheKurstermin(
         kapazitaet: kurstermin.kapazitaet,
         status: kurstermin.status,
         start: kurstermin.start,
+        modus: kurstermin.modus,
       })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
@@ -40,7 +43,18 @@ export async function bucheKurstermin(
       return { status: "kurs_nicht_buchbar" };
     }
 
-    // 2. Doppelbuchung verhindern (bereits aktive Buchung dieses Mitglieds).
+    // 2. Livestream-Gate (BR7/FZ-018): Basic (livestream_zugriff ≠ true) darf keine
+    //    Livestream-Kurse buchen — nur Studio.
+    if (termin.modus === "Livestream") {
+      const [t] = await tx
+        .select({ livestream: tarif.livestreamZugriff })
+        .from(mitglied)
+        .innerJoin(tarif, eq(mitglied.tarifId, tarif.tarifId))
+        .where(eq(mitglied.mitgliedId, mitgliedId));
+      if (!darfLivestreamBuchen(t?.livestream ?? null)) return { status: "livestream_gesperrt" };
+    }
+
+    // 3. Doppelbuchung verhindern (bereits aktive Buchung dieses Mitglieds).
     const [vorhanden] = await tx
       .select({ id: buchung.buchungId })
       .from(buchung)
@@ -53,7 +67,7 @@ export async function bucheKurstermin(
       );
     if (vorhanden) return { status: "bereits_gebucht" };
 
-    // 3. Belegung zählen (nur bestätigte Buchungen).
+    // 4. Belegung zählen (nur bestätigte Buchungen).
     const [belegung] = await tx
       .select({ anzahl: sql<number>`count(*)::int` })
       .from(buchung)
@@ -66,12 +80,12 @@ export async function bucheKurstermin(
 
     if (belegung.anzahl >= termin.kapazitaet) return { status: "voll" };
 
-    // 4. Buchungslimit des Tarifs (BR4) — erst prüfen, wenn wirklich gebucht würde
+    // 5. Buchungslimit des Tarifs (BR4) — erst prüfen, wenn wirklich gebucht würde
     //    (bei vollem Kurs greift oben "voll"/Warteliste, das ist keine Buchung).
     const limit = await pruefeMonatslimit(tx, mitgliedId, termin.start);
     if (!limit.erlaubt) return { status: "limit_erreicht", limit: limit.limit };
 
-    // 5. Auto-Bestätigung + Nachweis-Zeitstempel (BR1 / NFR, defaultNow()).
+    // 6. Auto-Bestätigung + Nachweis-Zeitstempel (BR1 / NFR, defaultNow()).
     const [neu] = await tx
       .insert(buchung)
       .values({ mitgliedId, kursterminId, buchungsstatus: "bestaetigt" })

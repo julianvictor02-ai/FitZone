@@ -364,20 +364,22 @@
 
 ## 8. Offene Fragen für Meeting 2
 
-> (Teile hiervon wurden im Rohprotokoll bereits beantwortet; verbleiben folgende echte Klärungspunkte.)
+> **Update 2026-07-04:** Von Lisa in einem Entscheidungsdurchgang beantwortet
+> (`docs/offene-fragen-kunde.md`). Status je Punkt unten. Getroffene Entscheidungen sind
+> in `docs/decisions.md` (2026-07-04) festgehalten.
 
-- Exakter Zahlwert der **Wartelisten-Obergrenze** (Beispiel 5?) und ob pro Kurstermin oder pro Kurstyp. `[Offene Frage]`
-- **Basic-Limit** final: 5/Monat hart? Kalendermonat oder rollierend? Verhältnis zur „6/Woche"-Aussage. `[Offene Frage]`
-- **Plus-Limit**: bestätigen, dass es kein festes Limit gibt. `[Offene Frage]`
-- Darf **Basic Livestreams** buchen (nur Studio genannt, Livestream unklar)? `[Offene Frage]`
-- **Kapazitäten je Livestream-Kurstyp** (Yoga/Pilates 15 gesetzt; HIIT/Bodyworkout ~20 „Pi mal Daumen") mit Marie/Tom fixieren; Studio-Kapazitäten anderer Typen außer Yoga (12–15). `[Offene Frage]`
-- **Storno-/Buchungsfrist**: 2 h offiziell fixieren; global oder pro Kurstyp. `[Offene Frage]`
-- **Storno-Gebühr**: „50 % Kurspreis" – Definition „Kurspreis" bei Flat-Tarifen; wie wird abgerechnet. `[Offene Frage]`
-- **No-Show-Schwelle** für Admin-Hinweis (3–4 Mal? Zeitraum?). `[Offene Frage]`
-- **Early Access**: einführen? Für welche Tarife, wie viel früher? `[Offene Frage]`
-- **Benachrichtigungskanäle** (Push/E-Mail/SMS) für Bestätigung, Nachrücken, Ausfall. `[Offene Frage]`
-- **Tarifpreise** erheben. `[Offene Frage]`
-- **Kontaktdaten/Login-Mechanik** der Mitglieder/Trainer (E-Mail, Passwort-Policy). `[Offene Frage]`
+- **Wartelisten-Obergrenze**: **5 pro Kurstermin**, einheitlich. `[Beantwortet 2026-07-04: passt]`
+- **Basic-Limit**: **5 pro Kalendermonat** (nach Kurs-Datum). `[Beantwortet 2026-07-04: passt]`
+- **Plus-Limit**: **kein festes Limit** (Steuerung über No-Show). `[Beantwortet 2026-07-04: passt]`
+- **Basic & Livestream**: **Nein — Basic nur Studio.** Livestream ab Plus. Umgesetzt in FZ-018. `[Beantwortet 2026-07-04]`
+- **Kapazitäten je Kurstyp**: bleiben vorerst **pro Termin** gesetzt (keine Kurstyp-Standards) — Lisa: passt so. `[Beantwortet 2026-07-04: pro Termin]`
+- **Storno-/Buchungsfrist**: **2 h vor Start, einheitlich** für alle Kurse. `[Beantwortet 2026-07-04: passt]`
+- **Storno-Gebühr**: Regel bestätigt = **50 % des Kurspreises**. **Offen bleibt** die „Kurspreis"-Basis, da Preise (noch) nicht hinterlegt (s. u.) → keine Auto-Berechnung, v1 nur Vermerk. `[Teilweise: Regel ja, Preisbasis offen]`
+- **No-Show-Schwelle**: **3 No-Shows / 90 Tage**, keine Auto-Sperre. `[Beantwortet 2026-07-04: passt]`
+- **Early Access**: **Nein**, alle buchen gleichzeitig. FZ-014 killed. `[Beantwortet 2026-07-04]`
+- **Benachrichtigungskanal**: **Push aufs Handy.** Realer Versand = FZ-019 (aktuell Stub). `[Beantwortet 2026-07-04]`
+- **Tarifpreise**: **nicht erheben** — evtl. später. `[Beantwortet 2026-07-04: vertagt]`
+- **Login-Mechanik**: **E-Mail-Login** bestätigt. **Offen bleibt** die Passwort-Policy und die Erst-Provisionierung der Konten. `[Teilweise: E-Mail ja, Policy offen]`
 
 ---
 

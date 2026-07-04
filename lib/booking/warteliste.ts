@@ -1,8 +1,9 @@
 import { and, asc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { buchung, kurstermin, wartelisteneintrag } from "@/lib/db/schema";
+import { buchung, kurstermin, mitglied, tarif, wartelisteneintrag } from "@/lib/db/schema";
 import { benachrichtige } from "@/lib/notify";
 import { pruefeMonatslimit } from "@/lib/booking/limit";
+import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 
 // FZ-002 — Warteliste: FIFO-Nachrücken, 30-Min-Fenster, harte Obergrenze (BR2/BR3).
 // Konzept: docs/concepts/FZ-002-warteliste.md
@@ -25,6 +26,7 @@ export type WarteErgebnis =
   | { status: "bereits_gebucht" }
   | { status: "bereits_wartend"; position: number }
   | { status: "warteliste_voll" }
+  | { status: "livestream_gesperrt" } // Basic darf keine Livestreams (BR7/FZ-018)
   | { status: "kurs_nicht_buchbar" };
 
 export type NachrueckErgebnis =
@@ -55,12 +57,26 @@ export async function warteAufKurstermin(
 ): Promise<WarteErgebnis> {
   return db.transaction(async (tx) => {
     const [termin] = await tx
-      .select({ kapazitaet: kurstermin.kapazitaet, status: kurstermin.status })
+      .select({
+        kapazitaet: kurstermin.kapazitaet,
+        status: kurstermin.status,
+        modus: kurstermin.modus,
+      })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
 
     if (!termin || termin.status !== "geplant") return { status: "kurs_nicht_buchbar" };
+
+    // Livestream-Gate (BR7/FZ-018): Basic darf nicht mal auf die Livestream-Warteliste.
+    if (termin.modus === "Livestream") {
+      const [t] = await tx
+        .select({ livestream: tarif.livestreamZugriff })
+        .from(mitglied)
+        .innerJoin(tarif, eq(mitglied.tarifId, tarif.tarifId))
+        .where(eq(mitglied.mitgliedId, mitgliedId));
+      if (!darfLivestreamBuchen(t?.livestream ?? null)) return { status: "livestream_gesperrt" };
+    }
 
     // Nicht voll → gehört nicht auf die Warteliste, sondern gebucht.
     if ((await bestaetigteBelegung(tx, kursterminId)) < termin.kapazitaet) {

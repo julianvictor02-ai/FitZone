@@ -13,6 +13,7 @@ import {
 } from "@/lib/db/schema";
 import { MAX_WARTELISTE } from "@/lib/booking/warteliste";
 import { stornoGebuehrFaellig } from "@/lib/booking/storno";
+import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 import { KursterminAktion, type Zustand } from "./KursterminAktion";
 
 const DATUM = new Intl.DateTimeFormat("de-DE", {
@@ -43,11 +44,12 @@ export default async function KursePage({
 
   // Tarif-Befreiung für den Stornogebühr-Hinweis (BR5).
   const [tarifInfo] = await db
-    .select({ befreit: tarif.stornoGebuehrBefreit })
+    .select({ befreit: tarif.stornoGebuehrBefreit, livestream: tarif.livestreamZugriff })
     .from(mitglied)
     .innerJoin(tarif, eq(mitglied.tarifId, tarif.tarifId))
     .where(eq(mitglied.mitgliedId, mitgliedId));
   const stornoBefreit = tarifInfo?.befreit ?? false;
+  const livestreamErlaubt = darfLivestreamBuchen(tarifInfo?.livestream ?? null);
 
   const { modus } = await searchParams;
   const modusFilter = modus === "Studio" || modus === "Livestream" ? modus : null;
@@ -179,6 +181,16 @@ export default async function KursePage({
             zustand = "buchbar";
           } else {
             zustand = wl.length >= MAX_WARTELISTE ? "warteliste_voll" : "voll";
+          }
+
+          // Livestream-Gate (BR7/FZ-018): Basic sieht Livestreams gesperrt, sofern
+          // nicht bereits gebucht/wartend (Bestandsschutz für Alt-Buchungen).
+          if (
+            t.modus === "Livestream" &&
+            !livestreamErlaubt &&
+            (zustand === "buchbar" || zustand === "voll" || zustand === "warteliste_voll")
+          ) {
+            zustand = "livestream_gesperrt";
           }
 
           return (
