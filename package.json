@@ -17,7 +17,8 @@
     "verify:fz003": "tsx scripts/verify-fz003.ts",
     "verify:fz004": "tsx scripts/verify-fz004.ts",
     "verify:fz005": "tsx scripts/verify-fz005.ts",
-    "verify:fz007": "tsx scripts/verify-fz007.ts"
+    "verify:fz007": "tsx scripts/verify-fz007.ts",
+    "verify:fz010": "tsx scripts/verify-fz010.ts"
   },
   "dependencies": {
     "next": "^15.1.4",

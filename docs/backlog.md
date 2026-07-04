@@ -36,7 +36,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-007 | Mitglieder-Selbstansicht (read-only Dashboard) | 1 | done | spec.md §7, §11 | `app/mein-bereich` (RSC, read-only): Stammdaten (Tarif/Status/mitgliedschaft_bis), eigene Buchungen/Historie, Wartelisten-Status + FIFO-Position. Strikt eigene Daten (§2b), keine Mutationen. Isolation verifiziert (verify:fz007, 9/9). |
 | FZ-008 | Buchungsnachweis/Zeitstempel für alle Vorgänge | 1 | validated | spec.md §6 (NFR) | „Nicht verhandelbar", auditierbar. |
 | FZ-009 | Auto-Benachrichtigung bei Kursausfall/-verschiebung | 1 | validated | spec.md §4 BR8 | Kanal (Push/E-Mail/SMS) offen. |
-| FZ-010 | Buchungslimits pro Tarif (Basic 5/Monat, Plus/Premium unbegrenzt) | 1 | validated | spec.md §4 BR4, §5 W3/W4 | Kalendermonat vs. rollierend offen. |
+| FZ-010 | Buchungslimits pro Tarif (Basic 5/Monat, Plus/Premium unbegrenzt) | 1 | done | spec.md §4 BR4, §5 W3/W4 | `lib/booking/limit.ts`, erzwungen in Direktbuchung + Nachrücken. Basic=5 aktive Buchungen/Kalendermonat (nach Kurstermin-Datum), Storno gibt Slot frei; Plus/Premium=null. Verifiziert (verify:fz010, 9/9); keine Regression fz001–003. Kalendermonat vs. rollierend weiter mit Kundin zu bestätigen. |
 | FZ-011 | Content-Zugriff nach Tarif (On-Demand/Livestream) | 1 | validated | spec.md §4 BR7 | Basic-Livestream unklar. |
 | FZ-012 | Trainer-Notizen zu Teilnehmern | 2 | validated | spec.md §7 (Should-have) | z. B. „wirkte verletzt". |
 | FZ-013 | No-Show-Auswertung mit Admin-Hinweis ab Schwelle | 2 | validated | spec.md §4 BR6, §7 | Schwelle (3–4?) + Zeitraum offen. Keine Auto-Sperre. |

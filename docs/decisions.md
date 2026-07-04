@@ -5,6 +5,45 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-010: Buchungslimit — Zählweise, Monatsdefinition, Durchsetzungspunkte
+
+**Kontext:** Umsetzung BR4 (Basic 5/Monat, Plus/Premium unbegrenzt). Spec §8 offen:
+Kalendermonat vs. rollierend; zusätzlich ungeklärt: zählt der Buchungs-Zeitpunkt oder das
+Kurs-Datum, und gibt ein Storno einen Platz frei?
+
+### Entscheidung
+- **Zählung nach Kurs-Datum, Kalendermonat**: „max. 5 Kurse pro Kalendermonat", gemessen an
+  `kurstermin.start`. Passt zu Lisas Beispiel („sechs Kurse in einer Woche") besser als eine
+  Zählung nach Buchungs-Zeitpunkt und verhindert Vorausbuchen zum Umgehen des Limits.
+- **Nur aktive (bestätigte) Buchungen zählen** → **Storno gibt einen Platz frei**. Missbrauch
+  (buchen/stornieren) fängt das No-Show-Tracking (BR6), nicht das Zähllimit.
+- **Durchsetzung an allen Buchungs-Erzeugungspunkten**: Direktbuchung (`bucheKurstermin`) und
+  Warteliste-Nachrücken (`bestaetigeNachrueckung`) — beide erzeugen eine Buchung. Neuer
+  Status `limit_erreicht`. Gemeinsame Prüfung in `lib/booking/limit.ts` (`pruefeMonatslimit`,
+  innerhalb der bestehenden Transaktion).
+- **Warteliste-Beitritt bleibt frei** (kein Booking); das Limit greift erst beim Nachrücken.
+  Ein am Limit angebotenes Nachrücken wird abgelehnt, das Angebot bleibt bis Fristablauf
+  bestehen (Mitglied könnte anderweitig Platz freimachen).
+- **Keine Atomaritäts-Sperre über Termine hinweg**: die Monatszählung läuft in der Buchungs-
+  Transaktion, aber gleichzeitige Buchungen **verschiedener** Termine durch dasselbe Mitglied
+  werden nicht serialisiert (anders als die Kapazität pro Termin). Bewusst akzeptiert —
+  Einzelnutzer-Aktion, kein Überbuchungs-/Sicherheitsrisiko.
+
+### Alternativen verworfen
+- Zählung nach Buchungs-Zeitpunkt: erlaubt Umgehung durch Vorausbuchen; „im Monat" meint
+  eher den Kurszeitraum.
+- Storno zählt weiter mit (kein Freigeben): bestraft legitimes Umbuchen; Missbrauch deckt BR6.
+- Limit nur bei Direktbuchung: ließe eine offensichtliche Umgehung über die Warteliste offen.
+- Mitglied-Row-Lock für exakte Atomarität: unnötiger Aufwand für einen Near-Zero-Fall.
+
+### Konsequenzen
+- Positiv: BR4 durchgängig erzwungen; verifiziert (`verify:fz010`, 9/9) inkl. Nachrücken,
+  Monatsgrenze und Storno-Freigabe; keine Regression (fz001–003 grün).
+- Negativ/Risiko: Monatsdefinition (Kalendermonat vs. rollierend) und Zählweise sind Annahmen
+  — mit Kundin zu bestätigen (spec §8). Monatsgrenzen nutzen server-lokale Monatsanfänge.
+
+---
+
 ## 2026-07-04 — FZ-007: Mitglieder-Selbstansicht — read-only, eigene Daten app-seitig
 
 **Kontext:** Umsetzung FZ-007 (Mitglieder-Selbstansicht). §2b/§7/§11: Mitglied sieht nur

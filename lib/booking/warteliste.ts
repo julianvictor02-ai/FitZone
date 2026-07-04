@@ -2,6 +2,7 @@ import { and, asc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { buchung, kurstermin, wartelisteneintrag } from "@/lib/db/schema";
 import { benachrichtige } from "@/lib/notify";
+import { pruefeMonatslimit } from "@/lib/booking/limit";
 
 // FZ-002 — Warteliste: FIFO-Nachrücken, 30-Min-Fenster, harte Obergrenze (BR2/BR3).
 // Konzept: docs/concepts/FZ-002-warteliste.md
@@ -30,6 +31,7 @@ export type NachrueckErgebnis =
   | { status: "nachgerueckt"; buchungId: string }
   | { status: "abgelaufen" }
   | { status: "kein_angebot" } //        kein aktives Nachrück-Angebot
+  | { status: "limit_erreicht"; limit: number } // Monatslimit erreicht (BR4)
   | { status: "kurs_nicht_buchbar" };
 
 async function bestaetigteBelegung(tx: Tx, kursterminId: string): Promise<number> {
@@ -184,7 +186,11 @@ export async function bestaetigeNachrueckung(
 ): Promise<NachrueckErgebnis> {
   return db.transaction(async (tx) => {
     const [termin] = await tx
-      .select({ kapazitaet: kurstermin.kapazitaet, status: kurstermin.status })
+      .select({
+        kapazitaet: kurstermin.kapazitaet,
+        status: kurstermin.status,
+        start: kurstermin.start,
+      })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
@@ -209,6 +215,11 @@ export async function bestaetigeNachrueckung(
         .where(eq(wartelisteneintrag.wlId, eintrag.id));
       return { status: "abgelaufen" };
     }
+
+    // Buchungslimit des Tarifs (BR4) gilt auch beim Nachrücken (erzeugt eine Buchung).
+    // Angebot bleibt bis Fristablauf bestehen — das Mitglied könnte Platz freimachen.
+    const limit = await pruefeMonatslimit(tx, mitgliedId, termin.start);
+    if (!limit.erlaubt) return { status: "limit_erreicht", limit: limit.limit };
 
     const [neu] = await tx
       .insert(buchung)

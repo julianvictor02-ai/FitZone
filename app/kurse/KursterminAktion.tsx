@@ -21,6 +21,7 @@ const MELDUNG: Record<string, string> = {
   bestaetigt: "Gebucht ✓",
   voll: "Ausgebucht",
   bereits_gebucht: "Bereits gebucht",
+  limit_erreicht: "Monatslimit erreicht (Basic: 5/Monat)",
   kurs_nicht_buchbar: "Nicht buchbar",
   nicht_angemeldet: "Bitte anmelden",
   kein_mitglied: "Kein Mitglied-Profil",
