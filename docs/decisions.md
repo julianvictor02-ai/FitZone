@@ -5,6 +5,47 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-008: Buchungsnachweis — Konsolidierung statt neuer Zeitstempel
+
+**Kontext:** §6 NFR / §7: „Buchungsnachweis/Zeitstempel für alle Vorgänge", „nicht
+verhandelbar", auditierbar; löst laut §9 Streitfälle „ich hab gebucht". Alle Vorgänge
+tragen bereits einen unveränderbaren Zeitstempel (`buchungszeitpunkt`, `stornozeitpunkt`,
+`anwesenheit_erfasst_am`, Warteliste `zeitstempel`/`benachrichtigt_am`). Offen war nur,
+diese **nachweisbar/auditierbar** an einer Stelle sichtbar zu machen.
+
+### Entscheidung
+- **Reine Lese-Aggregation, kein Schema-/Engine-Change.** Engine `lib/audit/nachweis.ts`
+  (`ladeNachweisEreignisse`) faltet die vorhandenen Zeitstempel zu einem chronologischen
+  Ereignis-Log (Vorgänge: `gebucht`, `storniert`, `anwesenheit_erfasst`,
+  `warteliste_beigetreten`, `nachrueck_angebot`), neueste zuerst. Optionaler
+  `mitgliedIds`-Filter (testbar; künftig Mitglieds-Detailansicht) + `limit`.
+- **Admin-Ansicht `app/admin/nachweis`** (nur Admin, read-only, §2b): Tabelle
+  Zeitstempel/Vorgang/Mitglied/Kurs. Admin sieht Namen (Vollzugriff), verlinkt von der
+  Startseite. Analog zum read-only Ansatz aus FZ-007.
+- **Engine statt Query in der Seite**, damit direkt verifizierbar (`verify:fz008`) — wie
+  die übrigen lib-Engines.
+
+### Alternativen verworfen
+- Separate `audit_log`-Tabelle, in die jede Aktion schreibt: Doppelspeicherung derselben
+  Fakten, Drift-Risiko, mehr Schreibpfade. Die vorhandenen Spalten **sind** der Nachweis
+  (Single Source of Truth); ein Log wäre nur bei zusätzlichen, nicht ohnehin gespeicherten
+  Ereignissen (z. B. reine Ansichten) gerechtfertigt.
+- DB-Trigger, der `buchungszeitpunkt`-UPDATEs verbietet, jetzt einführen: sinnvolle
+  Härtung („nicht verhandelbar"), aber die App ändert den Wert nirgends. Als Defense-in-
+  Depth zurückgestellt — analog zur RLS-Entscheidung (FZ-006).
+
+### Konsequenzen
+- Positiv: Vorgänge zentral, chronologisch, mit Zeitstempel nachweisbar (§6/§9);
+  verifiziert (`verify:fz008`, 12/12: alle Vorgangsarten, Sortierung, getrennte
+  Buchungs-/Storno-Zeitstempel, Filter); `next build` grün. **Damit ist Phase 1 (MVP)
+  vollständig** (FZ-001–011, ohne killed FZ-017).
+- Negativ/Offen: (1) Immutabilität nur app-seitig (kein DB-Guard, bis ergänzt).
+  (2) Kursausfall/-verschiebung (FZ-009) trägt **keinen** eigenen Zeitstempel und
+  erscheint daher nicht im Log — bei Bedarf `kurstermin.status_geaendert_am` nachrüsten.
+  (3) Log lädt bis `limit` Ereignisse ohne Pagination — für den MVP-Datenumfang genügend.
+
+---
+
 ## 2026-07-04 — FZ-009: Kursausfall-Benachrichtigung — Engine, Empfänger, Verschieben
 
 **Kontext:** BR8 (Statuswechsel `abgesagt`/`verschoben` benachrichtigt Betroffene).

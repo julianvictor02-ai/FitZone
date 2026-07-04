@@ -26,6 +26,9 @@ export default async function Home() {
                 <Link href="/admin/kurstermine" className="underline">
                   Kurstermin-Verwaltung
                 </Link>
+                <Link href="/admin/nachweis" className="underline">
+                  Buchungsnachweis
+                </Link>
               </>
             )}
             {benutzer.rolle === "trainer" && (
