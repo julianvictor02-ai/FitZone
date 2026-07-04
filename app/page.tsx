@@ -32,6 +32,9 @@ export default async function Home() {
                 <Link href="/admin/no-show" className="underline">
                   No-Show-Auswertung
                 </Link>
+                <Link href="/admin/kurstypen" className="underline">
+                  Kurspreise
+                </Link>
               </>
             )}
             {benutzer.rolle === "trainer" && (

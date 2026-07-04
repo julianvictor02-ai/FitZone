@@ -1,0 +1,1 @@
+ALTER TABLE "kurstyp" ADD COLUMN "einzelpreis" numeric(10, 2);

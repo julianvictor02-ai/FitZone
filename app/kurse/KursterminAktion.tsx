@@ -46,6 +46,8 @@ const AKTUALISIEREN = new Set([
 
 const btn = "rounded px-4 py-1.5 text-sm disabled:cursor-not-allowed";
 
+const EUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+
 export function KursterminAktion({
   kursterminId,
   zustand,
@@ -75,7 +77,11 @@ export function KursterminAktion({
     start(async () => {
       const r = await storniereBuchungAction(kursterminId);
       if (r.status === "storniert") {
-        setMeldung(r.gebuehrFaellig ? "Storniert — Gebühr fällig" : "Storniert ✓");
+        setMeldung(
+          r.gebuehrFaellig
+            ? `Storniert — Gebühr fällig${r.betrag != null ? ` (${EUR.format(r.betrag)})` : ""}`
+            : "Storniert ✓",
+        );
         router.refresh();
       } else {
         setMeldung(MELDUNG[r.status] ?? r.status);

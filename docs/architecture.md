@@ -41,7 +41,7 @@ Aus `spec.md §10` übernommen (dort mit Quellen-Tags). Verbindliche Grundlage v
 - `mitglied` (mitglied_id PK, name, tarif_id FK, status, mitgliedschaft_bis?, email, login_credential)
 - `trainer` (trainer_id PK, name, email)
 - `tarif` (tarif_id PK, name[Basic|Plus|Premium], monatspreis?, buchungslimit_pro_monat?, on_demand_zugriff, livestream_zugriff?, storno_gebuehr_befreit, early_access)
-- `kurstyp` (kurstyp_id PK, name, standard_kapazitaet_studio?, standard_kapazitaet_livestream?)
+- `kurstyp` (kurstyp_id PK, name, standard_kapazitaet_studio?, standard_kapazitaet_livestream?, einzelpreis?) — `einzelpreis` = Einzelkurs-Preis je Kursart, Basis der Stornogebühr 50 % (FZ-016)
 - `kurstermin` (kurstermin_id PK, kurstyp_id FK, trainer_id FK, modus[Studio|Livestream], start, kapazitaet, status[geplant|abgesagt|verschoben], stream_link?)
 - `on_demand_video` (video_id PK, titel, kurstyp_id FK?, level?, dauer_minuten?, mindest_tarif, plattform, url)
 - `benutzer` (benutzer_id PK = Supabase auth.users.id, email unique, rolle[admin|trainer|mitglied], mitglied_id FK?, trainer_id FK?, erstellt_am) — Identität/Rolle; ergänzt das Spec-Modell (FZ-006). Admin ohne mitglied_id/trainer_id.
