@@ -79,6 +79,7 @@ export default async function MeinBereichPage() {
       kurstyp: kurstyp.name,
       modus: kurstermin.modus,
       start: kurstermin.start,
+      terminStatus: kurstermin.status,
       status: buchung.buchungsstatus,
       zeitpunkt: buchung.buchungszeitpunkt,
       anwesenheit: buchung.anwesenheit,
@@ -195,8 +196,21 @@ export default async function MeinBereichPage() {
                       · {b.modus} · {DATUM.format(b.start)} Uhr
                     </span>
                   </span>
-                  <span className={`text-xs ${storniert ? "text-gray-500" : "text-green-700"}`}>
-                    {storniert ? "Storniert" : "Bestätigt"}
+                  <span className="flex items-center gap-2 text-xs">
+                    {/* Kursausfall/-verschiebung (FZ-009/BR8) — für nicht stornierte Buchungen. */}
+                    {!storniert && b.terminStatus === "abgesagt" && (
+                      <span className="rounded bg-red-100 px-2 py-0.5 text-red-800">
+                        Kurs abgesagt
+                      </span>
+                    )}
+                    {!storniert && b.terminStatus === "verschoben" && (
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">
+                        Kurs verschoben
+                      </span>
+                    )}
+                    <span className={storniert ? "text-gray-500" : "text-green-700"}>
+                      {storniert ? "Storniert" : "Bestätigt"}
+                    </span>
                   </span>
                 </div>
                 <div className="mt-1 text-xs text-gray-500">

@@ -4,7 +4,8 @@
 export type BenachrichtigungTyp =
   | "nachrueck_angebot"
   | "buchung_bestaetigt"
-  | "kurs_abgesagt";
+  | "kurs_abgesagt"
+  | "kurs_verschoben";
 
 export async function benachrichtige(
   typ: BenachrichtigungTyp,

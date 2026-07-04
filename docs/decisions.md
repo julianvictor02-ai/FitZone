@@ -5,6 +5,90 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-008: Buchungsnachweis — Konsolidierung statt neuer Zeitstempel
+
+**Kontext:** §6 NFR / §7: „Buchungsnachweis/Zeitstempel für alle Vorgänge", „nicht
+verhandelbar", auditierbar; löst laut §9 Streitfälle „ich hab gebucht". Alle Vorgänge
+tragen bereits einen unveränderbaren Zeitstempel (`buchungszeitpunkt`, `stornozeitpunkt`,
+`anwesenheit_erfasst_am`, Warteliste `zeitstempel`/`benachrichtigt_am`). Offen war nur,
+diese **nachweisbar/auditierbar** an einer Stelle sichtbar zu machen.
+
+### Entscheidung
+- **Reine Lese-Aggregation, kein Schema-/Engine-Change.** Engine `lib/audit/nachweis.ts`
+  (`ladeNachweisEreignisse`) faltet die vorhandenen Zeitstempel zu einem chronologischen
+  Ereignis-Log (Vorgänge: `gebucht`, `storniert`, `anwesenheit_erfasst`,
+  `warteliste_beigetreten`, `nachrueck_angebot`), neueste zuerst. Optionaler
+  `mitgliedIds`-Filter (testbar; künftig Mitglieds-Detailansicht) + `limit`.
+- **Admin-Ansicht `app/admin/nachweis`** (nur Admin, read-only, §2b): Tabelle
+  Zeitstempel/Vorgang/Mitglied/Kurs. Admin sieht Namen (Vollzugriff), verlinkt von der
+  Startseite. Analog zum read-only Ansatz aus FZ-007.
+- **Engine statt Query in der Seite**, damit direkt verifizierbar (`verify:fz008`) — wie
+  die übrigen lib-Engines.
+
+### Alternativen verworfen
+- Separate `audit_log`-Tabelle, in die jede Aktion schreibt: Doppelspeicherung derselben
+  Fakten, Drift-Risiko, mehr Schreibpfade. Die vorhandenen Spalten **sind** der Nachweis
+  (Single Source of Truth); ein Log wäre nur bei zusätzlichen, nicht ohnehin gespeicherten
+  Ereignissen (z. B. reine Ansichten) gerechtfertigt.
+- DB-Trigger, der `buchungszeitpunkt`-UPDATEs verbietet, jetzt einführen: sinnvolle
+  Härtung („nicht verhandelbar"), aber die App ändert den Wert nirgends. Als Defense-in-
+  Depth zurückgestellt — analog zur RLS-Entscheidung (FZ-006).
+
+### Konsequenzen
+- Positiv: Vorgänge zentral, chronologisch, mit Zeitstempel nachweisbar (§6/§9);
+  verifiziert (`verify:fz008`, 12/12: alle Vorgangsarten, Sortierung, getrennte
+  Buchungs-/Storno-Zeitstempel, Filter); `next build` grün. **Damit ist Phase 1 (MVP)
+  vollständig** (FZ-001–011, ohne killed FZ-017).
+- Negativ/Offen: (1) Immutabilität nur app-seitig (kein DB-Guard, bis ergänzt).
+  (2) Kursausfall/-verschiebung (FZ-009) trägt **keinen** eigenen Zeitstempel und
+  erscheint daher nicht im Log — bei Bedarf `kurstermin.status_geaendert_am` nachrüsten.
+  (3) Log lädt bis `limit` Ereignisse ohne Pagination — für den MVP-Datenumfang genügend.
+
+---
+
+## 2026-07-04 — FZ-009: Kursausfall-Benachrichtigung — Engine, Empfänger, Verschieben
+
+**Kontext:** BR8 (Statuswechsel `abgesagt`/`verschoben` benachrichtigt Betroffene).
+Spec §8 offen: Benachrichtigungskanal (Push/E-Mail/SMS). Es gab bis dato keine
+Admin-Terminverwaltung; das Kurstermin-Statusmodell (§2) ist bereits vorhanden.
+
+### Entscheidung
+- **Engine `lib/kurstermin/status.ts`** (`sageKursterminAb`, `verschiebeKurstermin`),
+  atomar über Transaktion + `SELECT … FOR UPDATE` auf die Kurstermin-Zeile (analog
+  Buchung/Storno). Erzwingt die erlaubten Übergänge aus spec §2: `geplant→abgesagt`,
+  `geplant→verschoben`, `verschoben→abgesagt` (unzulässige → `uebergang_unzulaessig`).
+- **Empfänger = bestätigte Buchungen ∪ aktive Warteliste** (`wartend`/`benachrichtigt`),
+  dedupliziert. Deckt „alle gebuchten Mitglieder (und ggf. Wartende)" (BR8). Die Engine
+  **gibt die Empfängerliste zurück** → testbar/auditierbar (NFR), ohne Mock.
+- **Kanal bleibt Stub** (`lib/notify.ts`, neuer Typ `kurs_verschoben`) — konsistent mit
+  FZ-002. Benachrichtigt wird **nach** Commit (Empfänger in der Tx gesammelt), nicht im
+  Tx-Body, damit ein Rollback keine „Benachrichtigt"-Nebenwirkung hinterlässt.
+- **Verschieben setzt neuen `start`** (spec §2: „Uhrzeitänderung"); `neuerStart` muss in
+  der Zukunft liegen (sonst `ungueltiger_start`). Buchungen/Warteliste bleiben als
+  Nachweis erhalten (kein Storno).
+- **Admin-UI `app/admin/kurstermine`** (nur Admin, Guard `requireRolle`): anstehende
+  `geplant`/`verschoben`-Termine mit Buchungs-/Wartelisten-Anzahl; Absagen (rot) +
+  Verschieben (datetime-local). Verlinkt von der Startseite (Admin).
+- **Mein-Bereich** zeigt „Kurs abgesagt/verschoben" als Badge an nicht stornierten
+  Buchungen — macht die Ausfall-Info in-app sichtbar, solange der reale Kanal ein Stub ist.
+
+### Alternativen verworfen
+- Benachrichtigung im Tx-Body (wie `verarbeiteWarteliste`): bei Rollback würde geloggt,
+  obwohl der Statuswechsel nicht committet — Empfänger nach Commit ist sauberer.
+- Beim Absagen die Buchungen auf `storniert` setzen: würde den unveränderbaren Nachweis
+  (§2/NFR) verfälschen; der Termin-Status genügt, um ihn aus buchbaren Listen zu nehmen.
+- Verschieben ohne Statuswechsel (nur `start` ändern): widerspräche dem Statusmodell §2.
+
+### Konsequenzen
+- Positiv: BR8 erzwungen und verifiziert (`verify:fz009`, 11/11: Empfänger inkl.
+  Warteliste, Übergänge, Start-Validierung, leere Empfängerliste); `next build` grün.
+- Negativ/Offen: Realer Kanal weiter offen (Stub). Ein **verschobener** Termin ist wegen
+  des Guards `status = geplant` nicht mehr regulär buchbar und die Warteliste rückt nicht
+  weiter nach — für v1 akzeptiert (bestehende Buchungen bleiben; Empfänger sehen die neue
+  Zeit in Mein-Bereich). Ob verschobene Termine bookbar bleiben sollen, mit Kundin klären.
+
+---
+
 ## 2026-07-04 — FZ-011: Content-Zugriff — On-Demand umgesetzt, Livestream-Gate vertagt
 
 **Kontext:** BR7 (Content-Zugriff nach Tarif). Bestätigt: On-Demand ab Plus (Basic keine).
