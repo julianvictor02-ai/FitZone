@@ -5,6 +5,41 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-005: Trainer-Ansicht — Sichtbarkeit app-seitig, Login-Provisionierung
+
+**Kontext:** Umsetzung FZ-005 (Trainer-Login: eigener Kursplan + Anwesenheit abhaken) auf
+der FZ-004-Engine. Zwei Punkte: (1) Wie wird „Trainer sieht nur eigene Kurse" (§2b)
+durchgesetzt? (2) Der `/trainer`-Bereich ist ohne verknüpftes Trainer-Konto unerreichbar.
+
+### Entscheidung
+- **Sichtbarkeit app-seitig** in der Seiten-Query erzwungen: `app/trainer/page.tsx` filtert
+  hart auf `trainer_id = Session-Trainer` (+ `status != abgesagt`); Teilnehmer werden nur
+  für diese Termin-IDs geladen. Konsistent mit dem RBAC-Ansatz aus FZ-006 (Guards +
+  gefilterte Drizzle-Queries, RLS als spätere Härtung). **Teilnehmernamen sind hier
+  zulässig** (Trainer sieht Teilnehmer eigener Kurse, §2b) — anders als in der
+  Mitglieder-Ansicht (nur Platz-Zahl).
+- **Abhaken ab Kursbeginn**: die UI deaktiviert die Buttons, solange `start > jetzt`
+  (die Engine lehnt es zusätzlich mit `zu_frueh` ab — FZ-004).
+- **Login-Provisionierung** für den Trainer in `scripts/bootstrap.ts` ergänzt (best effort:
+  nur wenn Auth-Konto `marie@fitzone.test` existiert) + vergangener Demo-Kurs mit
+  Teilnehmer, damit die Anwesenheit sofort demonstrierbar ist.
+
+### Alternativen verworfen
+- Sichtbarkeit erst über RLS: RLS ist projektweit als spätere Defense-in-Depth
+  eingeplant (decisions FZ-006), nicht als primäre Durchsetzung.
+- Ownership-Prüfung nur in der Engine (nicht in der Seiten-Query): die Seite würde sonst
+  fremde Termine laden und erst beim Abhaken scheitern — Datenleck der Terminliste/Namen.
+
+### Konsequenzen
+- Positiv: FZ-004+005 gemeinsam nutzbar; Isolation verifiziert (`verify:fz005`, 8/8);
+  `next build` grün.
+- Negativ/Risiko: Browser-End-to-End (echter Trainer-Login) konnte mangels
+  Trainer-Auth-Konto (kein Service-Role-Key zum Anlegen) nicht gefahren werden — offen wie
+  die Mitglieder-Login-Provisionierung (FZ-006). Nach Anlegen von `marie@fitzone.test` +
+  `bootstrap` manuell nachholbar.
+
+---
+
 ## 2026-07-04 — FZ-004: Anwesenheitserfassung — Zeitstempel-Spalte, Engine-Scope, Zeitgrenze
 
 **Kontext:** Umsetzung FZ-004. Drei Punkte: (1) Das Feature heißt „Anwesenheitserfassung

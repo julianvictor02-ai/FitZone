@@ -23,6 +23,11 @@ export default async function Home() {
                 Mitglieder-Verwaltung
               </Link>
             )}
+            {benutzer.rolle === "trainer" && (
+              <Link href="/trainer" className="underline">
+                Mein Kursplan
+              </Link>
+            )}
             {benutzer.rolle === "mitglied" && (
               <Link href="/kurse" className="underline">
                 Kurse buchen
@@ -45,8 +50,9 @@ export default async function Home() {
       </div>
 
       <p className="mt-10 text-sm text-gray-500">
-        Aktueller Stand: FZ-001 (Kursbuchung inkl. UI) und FZ-006 (Auth +
-        Mitgliederstammdaten). Details in <code>docs/backlog.md</code>.
+        Aktueller Stand: Kursbuchung/Warteliste/Storno (FZ-001–003), Auth +
+        Mitgliederstammdaten (FZ-006) und Trainer-Anwesenheit (FZ-004/005). Details in{" "}
+        <code>docs/backlog.md</code>.
       </p>
     </main>
   );

@@ -1,4 +1,4 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, lt } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { db } from "../lib/db";
 import {
@@ -8,6 +8,7 @@ import {
   tarif,
   kurstyp,
   kurstermin,
+  buchung,
 } from "../lib/db/schema";
 
 // Einmaliger Bootstrap für die lokale Verifikation (idempotent):
@@ -78,6 +79,46 @@ async function main() {
     )[0];
   }
 
+  // Trainer-Rolle mit Verknüpfung (FZ-005) — best effort: nur wenn ein Auth-Konto
+  // marie@fitzone.test existiert, sonst überspringen (Provisionierung offen, s. FZ-006).
+  const trainerAuthId = await authId(TRAINER_EMAIL);
+  if (trainerAuthId) {
+    await db
+      .insert(benutzer)
+      .values({
+        benutzerId: trainerAuthId,
+        email: TRAINER_EMAIL,
+        rolle: "trainer",
+        trainerId: tr.trainerId,
+      })
+      .onConflictDoNothing();
+  }
+
+  // Vergangener Demo-Kurs mit Teilnehmer, damit die Trainer-Anwesenheit (FZ-005) sofort
+  // abhakbar ist. Nur anlegen, wenn Marie noch keinen vergangenen Kurs hat (idempotent).
+  const vergangen = await db
+    .select({ id: kurstermin.kursterminId })
+    .from(kurstermin)
+    .where(and(eq(kurstermin.trainerId, tr.trainerId), lt(kurstermin.start, new Date())));
+  if (vergangen.length === 0) {
+    const gestern = new Date(Date.now() - 86_400_000);
+    const [ktPast] = await db
+      .insert(kurstermin)
+      .values({
+        kurstypId: kYoga.kurstypId,
+        trainerId: tr.trainerId,
+        modus: "Studio",
+        start: gestern,
+        kapazitaet: 5,
+        status: "geplant",
+      })
+      .returning();
+    await db
+      .insert(buchung)
+      .values({ mitgliedId: m.mitgliedId, kursterminId: ktPast.kursterminId, buchungsstatus: "bestaetigt" })
+      .onConflictDoNothing();
+  }
+
   // Demo-Kurstermine nur, wenn noch keine künftigen existieren
   const kuenftig = await db
     .select({ id: kurstermin.kursterminId })
@@ -118,7 +159,7 @@ async function main() {
   console.log("Bootstrap fertig:");
   console.log(`  Admin:    ${ADMIN_EMAIL} (rolle=admin)`);
   console.log(`  Mitglied: ${MEMBER_EMAIL} → ${m.name} (Tarif Plus)`);
-  console.log(`  Trainer:  ${tr.name}`);
+  console.log(`  Trainer:  ${tr.name} (${TRAINER_EMAIL})${trainerAuthId ? " → rolle=trainer verknüpft" : " — kein Auth-Konto, Login-Verknüpfung übersprungen"}`);
   console.log(`  Buchbare Kurstermine: ${anzahlTermine}`);
   process.exit(0);
 }
