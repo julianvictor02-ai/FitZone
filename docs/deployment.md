@@ -32,12 +32,14 @@ bereits angewandt — nichts zu tun. Für eine **frische** DB einmalig lokal mit
 `DATABASE_URL`: `npm run db:migrate`.
 
 ### Warteliste-Cron
-`vercel.json` plant `GET /api/cron/warteliste` alle 10 Min. Vercel sendet dabei automatisch
-`Authorization: Bearer <CRON_SECRET>` (die Route prüft genau das).
-- **Hobby-Plan:** Crons laufen nur ~1×/Tag. Das betrifft ausschließlich **zeitgesteuerte
-  Ablauf-Nachrückungen** (30-Min-Fenster) — frei werdende Plätze durch **Storno** rücken
-  weiterhin sofort nach (Live-Trigger). Für das echte 30-Min-Verhalten **Pro-Plan** nötig
-  oder einen externen Cron, der die URL mit dem Bearer-Secret aufruft.
+`vercel.json` plant `GET /api/cron/warteliste` **täglich** (`0 3 * * *`). Vercel sendet dabei
+automatisch `Authorization: Bearer <CRON_SECRET>` (die Route prüft genau das).
+- **Hobby-Plan erlaubt nur tägliche Crons** — deshalb 1×/Tag statt häufiger (`*/10` schlägt
+  beim Deploy fehl). Das betrifft ausschließlich **zeitgesteuerte Ablauf-Nachrückungen**
+  (30-Min-Fenster): abgelaufene Angebote werden erst beim nächsten Lauf freigegeben. Frei
+  werdende Plätze durch **Storno** rücken weiterhin **sofort** nach (Live-Trigger).
+- Für echtes 30-Min-Verhalten: **Pro-Plan** (dann z. B. `*/10 * * * *`) oder ein **externer
+  Cron**, der die URL alle paar Minuten mit dem Bearer-Secret aufruft.
 
 ---
 
