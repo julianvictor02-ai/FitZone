@@ -19,7 +19,7 @@ Festgelegt am 2026-07-03 (siehe `decisions.md`). **Next.js + Supabase.**
 | RBAC | App-seitige Guards (`requireRolle`) über `benutzer`-Tabelle; RLS als späteres Defense-in-Depth (Rollen: Admin/Trainer/Mitglied) |
 | ORM | Drizzle |
 | Jobs/Timer | Supabase Edge Functions / `pg_cron` (30-Min-Nachrück-Fenster, BR2) |
-| Mail/Benachrichtigung | Resend (Kanal endgültig offen, `spec.md §8`) |
+| Benachrichtigung | **Web-Push** (`web-push` + VAPID, Service Worker) — Kanal entschieden (Lisa 2026-07-04, „Push aufs Handy"); Versand zentral in `lib/notify.ts` (FZ-019) |
 | Deployment | Vercel |
 
 Diese Wahl deckt die harten Rahmenbedingungen der Spec ab:
@@ -45,6 +45,7 @@ Aus `spec.md §10` übernommen (dort mit Quellen-Tags). Verbindliche Grundlage v
 - `kurstermin` (kurstermin_id PK, kurstyp_id FK, trainer_id FK, modus[Studio|Livestream], start, kapazitaet, status[geplant|abgesagt|verschoben], stream_link?)
 - `on_demand_video` (video_id PK, titel, kurstyp_id FK?, level?, dauer_minuten?, mindest_tarif, plattform, url)
 - `benutzer` (benutzer_id PK = Supabase auth.users.id, email unique, rolle[admin|trainer|mitglied], mitglied_id FK?, trainer_id FK?, erstellt_am) — Identität/Rolle; ergänzt das Spec-Modell (FZ-006). Admin ohne mitglied_id/trainer_id.
+- `push_abo` (abo_id PK, mitglied_id FK, endpoint unique, p256dh, auth, erstellt_am) — Web-Push-Abos je Gerät/Browser (FZ-019). Upsert über `endpoint`; ein Mitglied kann mehrere Abos haben.
 
 ### Junction-Tabellen (n:m)
 - `buchung` (buchung_id PK, mitglied_id FK, kurstermin_id FK, buchungsstatus[bestaetigt|storniert], buchungszeitpunkt, stornozeitpunkt?, anwesenheit[offen|anwesend|no_show|entschuldigt], anwesenheit_erfasst_am?, storno_gebuehr_faellig, storno_gebuehr_betrag?, trainer_notiz?) — **partieller Unique-Index (mitglied_id, kurstermin_id) WHERE buchungsstatus='bestaetigt'** (max. eine aktive Buchung; Storno-Historie bleibt, Neubuchung möglich — siehe decisions.md 2026-07-03 FZ-001)

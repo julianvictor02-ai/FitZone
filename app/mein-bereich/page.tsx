@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { requireRolle } from "@/lib/auth/benutzer";
+import { PushEinstellung } from "./PushEinstellung";
 import { db } from "@/lib/db";
 import {
   buchung,
@@ -157,6 +158,9 @@ export default async function MeinBereichPage() {
           </div>
         </dl>
       </section>
+
+      {/* Benachrichtigungen (FZ-019) */}
+      <PushEinstellung vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
 
       {/* Warteliste */}
       <section className="mt-8">

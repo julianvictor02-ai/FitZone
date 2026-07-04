@@ -5,6 +5,48 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-019: Web-Push — Architektur, Versandpunkt, Testbarkeit
+
+**Kontext:** Kundenentscheidung „Push aufs Handy" (§8 F10). Die App ist ein Next.js-
+Web-App; „Push aufs Handy" ohne native App bedeutet **Web-Push** (Push API + Service
+Worker + VAPID). Der bisherige `benachrichtige`-Stub (FZ-002/008/009) wird zum realen Versand.
+
+### Entscheidung
+- **Web-Push** als Kanal: neue Dependency `web-push`, VAPID-Keys aus der Umgebung
+  (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`; Platzhalter in
+  `.env.example`). Neue Tabelle `push_abo` (Migration 0003): ein Mitglied kann mehrere
+  Geräte/Browser abonnieren; `endpoint` ist eindeutig (Upsert bei Re-Subscribe).
+- **`benachrichtige` bleibt die einzige Aufrufstelle:** der Versand wird in `lib/notify.ts`
+  implementiert; die 3 bestehenden Aufrufe (Nachrücken, Absage, Verschub) senden dadurch
+  ohne Änderung real. Ohne konfigurierte Keys/Abos wird nur geloggt (Dev/Fallback) — nichts crasht.
+- **Schichttrennung für Testbarkeit:** die DB-Abo-Schicht `lib/push/abo.ts` importiert
+  **kein** `web-push`, ist daher headless verifizierbar (`verify:fz019`). Der eigentliche
+  Versand (Browser-Berechtigung/Zustellung) ist nur manuell im Browser prüfbar.
+- **Aufräumen abgelaufener Abos:** meldet der Push-Service 404/410, wird das Abo gelöscht.
+- **Versand nach Commit (Effizienz-/Sicherheitsfix):** `verarbeiteWarteliste` sammelt die
+  Nachrück-Angebote in der Transaktion und benachrichtigt **erst nach dem Commit** — vorher
+  lief `benachrichtige` unter dem `FOR UPDATE`-Lock des Kurstermins; realer Netz-I/O dort
+  hätte konkurrierende Buchungen blockiert (CLAUDE.md-Gotcha zur atomaren Kapazität).
+- **UI:** „Benachrichtigungen aktivieren"-Schalter in `app/mein-bereich` (SW registrieren,
+  Berechtigung anfragen, abonnieren, Abo per Server-Action speichern; eigenes Konto, §2b).
+
+### Alternativen verworfen
+- E-Mail als (einfacherer) Kanal: widerspricht der Kundenentscheidung „aufs Handy".
+- Nur Fundament (Abo-Modell ohne Versand): angeboten, aber Kunde wählte volle Umsetzung.
+- Payload mit Kursdetails: bewusst generischer Text + Deep-Link in die App (keine fremden
+  Daten im Push, Mitglied sieht Kontext nach dem Öffnen).
+- Versand innerhalb der Warteliste-Transaktion belassen: hält den Lock während HTTP → verworfen.
+
+### Konsequenzen
+- Positiv: realer Kanal steht; Abo-Schicht verifiziert (`verify:fz019`, 7/7: Upsert,
+  Multi-Device, mitglied-genaues Entfernen, Löschen, Isolation); keine Regression
+  (fz002/003/010 grün); `next build` grün.
+- Betrieb/Offen: **VAPID-Keys müssen gesetzt werden** (sonst Log-Fallback). Echte Zustellung
+  ist browserabhängig; **iOS** nur als installierte PWA (kein Web-Push im Safari-Tab) — für
+  „aufs Handy" ggf. später ein PWA-Manifest/Install-Hinweis nachrüsten.
+
+---
+
 ## 2026-07-04 — Kundenentscheidungen zu den offenen §8-Fragen (Lisa)
 
 **Kontext:** Lisa hat die 12 offenen Punkte aus spec.md §8 in einem Durchgang beantwortet

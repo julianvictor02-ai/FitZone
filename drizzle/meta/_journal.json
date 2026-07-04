@@ -22,6 +22,13 @@
       "when": 1783124737619,
       "tag": "0002_demonic_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783168824008,
+      "tag": "0003_flowery_jackpot",
+      "breakpoints": true
     }
   ]
 }

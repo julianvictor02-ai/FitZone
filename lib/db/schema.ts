@@ -172,6 +172,20 @@ export const wartelisteneintrag = pgTable(
   ],
 );
 
+// FZ-019 — Web-Push-Abo eines Mitglieds (Browser/Gerät). endpoint ist die eindeutige
+// Push-Service-URL; p256dh/auth sind die Verschlüsselungs-Keys aus der PushSubscription.
+// Ein Mitglied kann mehrere Geräte/Browser haben (mehrere Zeilen).
+export const pushAbo = pgTable("push_abo", {
+  aboId: uuid("abo_id").primaryKey().defaultRandom(),
+  mitgliedId: uuid("mitglied_id")
+    .notNull()
+    .references(() => mitglied.mitgliedId),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  erstelltAm: timestamp("erstellt_am", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Identität/Rolle: verknüpft ein Supabase-Auth-Konto mit einer Rolle und optional
 // mit einem Mitglied- oder Trainer-Datensatz. Admin hat weder mitglied_id noch
 // trainer_id. benutzer_id = auth.users.id (wird beim Anlegen explizit gesetzt).

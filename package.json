@@ -24,7 +24,8 @@
     "verify:fz011": "tsx scripts/verify-fz011.ts",
     "verify:fz012": "tsx scripts/verify-fz012.ts",
     "verify:fz013": "tsx scripts/verify-fz013.ts",
-    "verify:fz018": "tsx scripts/verify-fz018.ts"
+    "verify:fz018": "tsx scripts/verify-fz018.ts",
+    "verify:fz019": "tsx scripts/verify-fz019.ts"
   },
   "dependencies": {
     "next": "^15.1.4",
@@ -33,7 +34,8 @@
     "@supabase/supabase-js": "^2.47.10",
     "@supabase/ssr": "^0.5.2",
     "drizzle-orm": "^0.38.3",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
@@ -45,6 +47,7 @@
     "@tailwindcss/postcss": "^4.0.0",
     "postcss": "^8.4.49",
     "tsx": "^4.19.2",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.4",
     "@eslint/eslintrc": "^3.2.0"

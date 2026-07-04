@@ -1,0 +1,916 @@
+{
+  "id": "8138a09c-e93e-4485-9838-62b7704aef2e",
+  "prevId": "4ee03f23-2bd1-46fe-8718-fcc308b004a4",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.benutzer": {
+      "name": "benutzer",
+      "schema": "",
+      "columns": {
+        "benutzer_id": {
+          "name": "benutzer_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rolle": {
+          "name": "rolle",
+          "type": "rolle",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mitglied_id": {
+          "name": "mitglied_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trainer_id": {
+          "name": "trainer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "erstellt_am": {
+          "name": "erstellt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "benutzer_mitglied_id_mitglied_mitglied_id_fk": {
+          "name": "benutzer_mitglied_id_mitglied_mitglied_id_fk",
+          "tableFrom": "benutzer",
+          "tableTo": "mitglied",
+          "columnsFrom": [
+            "mitglied_id"
+          ],
+          "columnsTo": [
+            "mitglied_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "benutzer_trainer_id_trainer_trainer_id_fk": {
+          "name": "benutzer_trainer_id_trainer_trainer_id_fk",
+          "tableFrom": "benutzer",
+          "tableTo": "trainer",
+          "columnsFrom": [
+            "trainer_id"
+          ],
+          "columnsTo": [
+            "trainer_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "benutzer_email_unique": {
+          "name": "benutzer_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.buchung": {
+      "name": "buchung",
+      "schema": "",
+      "columns": {
+        "buchung_id": {
+          "name": "buchung_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mitglied_id": {
+          "name": "mitglied_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kurstermin_id": {
+          "name": "kurstermin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "buchungsstatus": {
+          "name": "buchungsstatus",
+          "type": "buchungsstatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bestaetigt'"
+        },
+        "buchungszeitpunkt": {
+          "name": "buchungszeitpunkt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "stornozeitpunkt": {
+          "name": "stornozeitpunkt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anwesenheit": {
+          "name": "anwesenheit",
+          "type": "anwesenheit",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'offen'"
+        },
+        "anwesenheit_erfasst_am": {
+          "name": "anwesenheit_erfasst_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storno_gebuehr_faellig": {
+          "name": "storno_gebuehr_faellig",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "storno_gebuehr_betrag": {
+          "name": "storno_gebuehr_betrag",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trainer_notiz": {
+          "name": "trainer_notiz",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "uq_buchung_aktiv_mitglied_termin": {
+          "name": "uq_buchung_aktiv_mitglied_termin",
+          "columns": [
+            {
+              "expression": "mitglied_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kurstermin_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"buchung\".\"buchungsstatus\" = 'bestaetigt'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "buchung_mitglied_id_mitglied_mitglied_id_fk": {
+          "name": "buchung_mitglied_id_mitglied_mitglied_id_fk",
+          "tableFrom": "buchung",
+          "tableTo": "mitglied",
+          "columnsFrom": [
+            "mitglied_id"
+          ],
+          "columnsTo": [
+            "mitglied_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "buchung_kurstermin_id_kurstermin_kurstermin_id_fk": {
+          "name": "buchung_kurstermin_id_kurstermin_kurstermin_id_fk",
+          "tableFrom": "buchung",
+          "tableTo": "kurstermin",
+          "columnsFrom": [
+            "kurstermin_id"
+          ],
+          "columnsTo": [
+            "kurstermin_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kurstermin": {
+      "name": "kurstermin",
+      "schema": "",
+      "columns": {
+        "kurstermin_id": {
+          "name": "kurstermin_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kurstyp_id": {
+          "name": "kurstyp_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trainer_id": {
+          "name": "trainer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "modus": {
+          "name": "modus",
+          "type": "modus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start": {
+          "name": "start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kapazitaet": {
+          "name": "kapazitaet",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "kurstermin_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'geplant'"
+        },
+        "stream_link": {
+          "name": "stream_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "kurstermin_kurstyp_id_kurstyp_kurstyp_id_fk": {
+          "name": "kurstermin_kurstyp_id_kurstyp_kurstyp_id_fk",
+          "tableFrom": "kurstermin",
+          "tableTo": "kurstyp",
+          "columnsFrom": [
+            "kurstyp_id"
+          ],
+          "columnsTo": [
+            "kurstyp_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "kurstermin_trainer_id_trainer_trainer_id_fk": {
+          "name": "kurstermin_trainer_id_trainer_trainer_id_fk",
+          "tableFrom": "kurstermin",
+          "tableTo": "trainer",
+          "columnsFrom": [
+            "trainer_id"
+          ],
+          "columnsTo": [
+            "trainer_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kurstyp": {
+      "name": "kurstyp",
+      "schema": "",
+      "columns": {
+        "kurstyp_id": {
+          "name": "kurstyp_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "kurstyp_name",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "standard_kapazitaet_studio": {
+          "name": "standard_kapazitaet_studio",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "standard_kapazitaet_livestream": {
+          "name": "standard_kapazitaet_livestream",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "kurstyp_name_unique": {
+          "name": "kurstyp_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mitglied": {
+      "name": "mitglied",
+      "schema": "",
+      "columns": {
+        "mitglied_id": {
+          "name": "mitglied_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tarif_id": {
+          "name": "tarif_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "mitglied_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'aktiv'"
+        },
+        "mitgliedschaft_bis": {
+          "name": "mitgliedschaft_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mitglied_tarif_id_tarif_tarif_id_fk": {
+          "name": "mitglied_tarif_id_tarif_tarif_id_fk",
+          "tableFrom": "mitglied",
+          "tableTo": "tarif",
+          "columnsFrom": [
+            "tarif_id"
+          ],
+          "columnsTo": [
+            "tarif_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "mitglied_email_unique": {
+          "name": "mitglied_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.on_demand_video": {
+      "name": "on_demand_video",
+      "schema": "",
+      "columns": {
+        "video_id": {
+          "name": "video_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "titel": {
+          "name": "titel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kurstyp_id": {
+          "name": "kurstyp_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level": {
+          "name": "level",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dauer_minuten": {
+          "name": "dauer_minuten",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mindest_tarif": {
+          "name": "mindest_tarif",
+          "type": "tarif_name",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plattform": {
+          "name": "plattform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "on_demand_video_kurstyp_id_kurstyp_kurstyp_id_fk": {
+          "name": "on_demand_video_kurstyp_id_kurstyp_kurstyp_id_fk",
+          "tableFrom": "on_demand_video",
+          "tableTo": "kurstyp",
+          "columnsFrom": [
+            "kurstyp_id"
+          ],
+          "columnsTo": [
+            "kurstyp_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.push_abo": {
+      "name": "push_abo",
+      "schema": "",
+      "columns": {
+        "abo_id": {
+          "name": "abo_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mitglied_id": {
+          "name": "mitglied_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "p256dh": {
+          "name": "p256dh",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "auth": {
+          "name": "auth",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erstellt_am": {
+          "name": "erstellt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "push_abo_mitglied_id_mitglied_mitglied_id_fk": {
+          "name": "push_abo_mitglied_id_mitglied_mitglied_id_fk",
+          "tableFrom": "push_abo",
+          "tableTo": "mitglied",
+          "columnsFrom": [
+            "mitglied_id"
+          ],
+          "columnsTo": [
+            "mitglied_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "push_abo_endpoint_unique": {
+          "name": "push_abo_endpoint_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "endpoint"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tarif": {
+      "name": "tarif",
+      "schema": "",
+      "columns": {
+        "tarif_id": {
+          "name": "tarif_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "tarif_name",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "monatspreis": {
+          "name": "monatspreis",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buchungslimit_pro_monat": {
+          "name": "buchungslimit_pro_monat",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "on_demand_zugriff": {
+          "name": "on_demand_zugriff",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "livestream_zugriff": {
+          "name": "livestream_zugriff",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storno_gebuehr_befreit": {
+          "name": "storno_gebuehr_befreit",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "early_access": {
+          "name": "early_access",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tarif_name_unique": {
+          "name": "tarif_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trainer": {
+      "name": "trainer",
+      "schema": "",
+      "columns": {
+        "trainer_id": {
+          "name": "trainer_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "trainer_email_unique": {
+          "name": "trainer_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.wartelisteneintrag": {
+      "name": "wartelisteneintrag",
+      "schema": "",
+      "columns": {
+        "wl_id": {
+          "name": "wl_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mitglied_id": {
+          "name": "mitglied_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kurstermin_id": {
+          "name": "kurstermin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "zeitstempel": {
+          "name": "zeitstempel",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "warteliste_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'wartend'"
+        },
+        "benachrichtigt_am": {
+          "name": "benachrichtigt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "frist_bis": {
+          "name": "frist_bis",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "uq_warteliste_aktiv_mitglied_termin": {
+          "name": "uq_warteliste_aktiv_mitglied_termin",
+          "columns": [
+            {
+              "expression": "mitglied_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kurstermin_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"wartelisteneintrag\".\"status\" in ('wartend', 'benachrichtigt')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "wartelisteneintrag_mitglied_id_mitglied_mitglied_id_fk": {
+          "name": "wartelisteneintrag_mitglied_id_mitglied_mitglied_id_fk",
+          "tableFrom": "wartelisteneintrag",
+          "tableTo": "mitglied",
+          "columnsFrom": [
+            "mitglied_id"
+          ],
+          "columnsTo": [
+            "mitglied_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "wartelisteneintrag_kurstermin_id_kurstermin_kurstermin_id_fk": {
+          "name": "wartelisteneintrag_kurstermin_id_kurstermin_kurstermin_id_fk",
+          "tableFrom": "wartelisteneintrag",
+          "tableTo": "kurstermin",
+          "columnsFrom": [
+            "kurstermin_id"
+          ],
+          "columnsTo": [
+            "kurstermin_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.anwesenheit": {
+      "name": "anwesenheit",
+      "schema": "public",
+      "values": [
+        "offen",
+        "anwesend",
+        "no_show",
+        "entschuldigt"
+      ]
+    },
+    "public.buchungsstatus": {
+      "name": "buchungsstatus",
+      "schema": "public",
+      "values": [
+        "bestaetigt",
+        "storniert"
+      ]
+    },
+    "public.kurstermin_status": {
+      "name": "kurstermin_status",
+      "schema": "public",
+      "values": [
+        "geplant",
+        "abgesagt",
+        "verschoben"
+      ]
+    },
+    "public.kurstyp_name": {
+      "name": "kurstyp_name",
+      "schema": "public",
+      "values": [
+        "Yoga",
+        "Pilates",
+        "Spinning",
+        "HIIT",
+        "Bodyworkout"
+      ]
+    },
+    "public.mitglied_status": {
+      "name": "mitglied_status",
+      "schema": "public",
+      "values": [
+        "aktiv",
+        "pausiert"
+      ]
+    },
+    "public.modus": {
+      "name": "modus",
+      "schema": "public",
+      "values": [
+        "Studio",
+        "Livestream"
+      ]
+    },
+    "public.rolle": {
+      "name": "rolle",
+      "schema": "public",
+      "values": [
+        "admin",
+        "trainer",
+        "mitglied"
+      ]
+    },
+    "public.tarif_name": {
+      "name": "tarif_name",
+      "schema": "public",
+      "values": [
+        "Basic",
+        "Plus",
+        "Premium"
+      ]
+    },
+    "public.warteliste_status": {
+      "name": "warteliste_status",
+      "schema": "public",
+      "values": [
+        "wartend",
+        "benachrichtigt",
+        "nachgerueckt",
+        "abgelaufen"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
