@@ -38,6 +38,7 @@ const DATUM_TAG = new Intl.DateTimeFormat("de-DE", {
   month: "2-digit",
   year: "numeric",
 });
+const EUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
 const ANWESENHEIT_LABEL: Record<string, string> = {
   anwesend: "Anwesend",
@@ -86,6 +87,7 @@ export default async function MeinBereichPage() {
       anwesenheit: buchung.anwesenheit,
       stornozeitpunkt: buchung.stornozeitpunkt,
       gebuehr: buchung.stornoGebuehrFaellig,
+      betrag: buchung.stornoGebuehrBetrag,
     })
     .from(buchung)
     .innerJoin(kurstermin, eq(buchung.kursterminId, kurstermin.kursterminId))
@@ -222,7 +224,8 @@ export default async function MeinBereichPage() {
                   {b.anwesenheit !== "offen" && ` · ${ANWESENHEIT_LABEL[b.anwesenheit] ?? b.anwesenheit}`}
                   {storniert && b.stornozeitpunkt &&
                     ` · storniert am ${DATUM_ZEIT.format(b.stornozeitpunkt)} Uhr`}
-                  {storniert && b.gebuehr && " · Stornogebühr fällig"}
+                  {storniert && b.gebuehr &&
+                    ` · Stornogebühr fällig${b.betrag != null ? ` (${EUR.format(Number(b.betrag))})` : ""}`}
                 </div>
               </li>
             );

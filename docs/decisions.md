@@ -5,6 +5,45 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-016: Stornogebühr-Berechnung — Kurspreis pro Kurstyp
+
+**Kontext:** Lisa hat die Gebührenregel bestätigt (§8 F7): **Stornogebühr = 50 % des
+Kurspreises**. FZ-003 setzte bislang nur das Flag `storno_gebuehr_faellig` — es fehlte ein
+„Kurspreis" im Modell (Tarife sind Monats-flat und laut F11 nicht hinterlegt). Auf Rückfrage:
+Kurspreis kommt **pro Kurstyp**.
+
+### Entscheidung
+- **Neues Feld `kurstyp.einzelpreis`** (numeric, nullable; Migration 0004): ein Einzelkurs-
+  Preis je Kursart, admin-gepflegt (`app/admin/kurstypen`). `null` = noch nicht gepflegt.
+- **Betrag in der Storno-Engine** (`lib/booking/storno.ts`): `berechneStornoGebuehr(einzelpreis,
+  faellig)` = `einzelpreis * 0.5` (zentrale Konstante `STORNO_GEBUEHR_ANTEIL`), gerundet auf
+  2 Stellen. Gesetzt in `buchung.storno_gebuehr_betrag` **nur** wenn Gebühr fällig **und**
+  Preis gepflegt — sonst `null` (Flag ohne Betrag = bisheriges v1-Verhalten, kein Bruch).
+- **Kein Lock auf `kurstyp`:** der Preis wird in der Storno-Transaktion **separat und
+  ungelockt** gelesen (nicht per Join mit `FOR UPDATE`), damit nicht alle Storni einer
+  Kursart serialisiert werden. Nur die Kurstermin-Zeile bleibt gelockt (FZ-003).
+- **Betrag sichtbar:** Kursliste (Storno-Meldung) und Mein Bereich (Historie) zeigen den
+  Betrag in Euro; Admin sieht Preis + resultierende Gebühr in der Kurspreis-Pflege.
+- **Nur Berechnung, keine Abbuchung:** Einzug/Payment bleibt bewusst außerhalb v1 (kein
+  Zahlungsanbieter angebunden); die Abwicklung bleibt manuell (Betrag ist nun aber ausgewiesen).
+
+### Alternativen verworfen
+- Preis global oder pro Kurstermin: Kunde wählte „pro Kurstyp" (wenige, stabile Werte; deckt
+  unterschiedliche Kurse ab, ohne Pflegeaufwand je Session).
+- Preis per Join mit `FOR UPDATE` laden: würde die `kurstyp`-Zeile mitsperren → unnötige
+  Serialisierung fremder Storni.
+- Betrag auch ohne gepflegten Preis „schätzen": ohne Preis gibt es keine Basis → Flag-only bleibt.
+
+### Konsequenzen
+- Positiv: BR5 vollständig für die **Berechnung**; verifiziert (`verify:fz016`, 9/9: 50-%-
+  Rechnung, Rundung, Premium befreit, rechtzeitig gebührenfrei, ohne Preis nur Flag);
+  keine Regression (fz003 grün); `next build` grün.
+- Offen/bewusst außen vor: **Abbuchung** (Payment). Preise müssen von Lisa gepflegt werden
+  (bis dahin Flag ohne Betrag). `einzelpreis` bezieht sich auf die Kursart, nicht auf den
+  Modus (Studio/Livestream gleich) — bei Bedarf später verfeinern.
+
+---
+
 ## 2026-07-04 — FZ-019: Web-Push — Architektur, Versandpunkt, Testbarkeit
 
 **Kontext:** Kundenentscheidung „Push aufs Handy" (§8 F10). Die App ist ein Next.js-

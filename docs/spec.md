@@ -374,7 +374,7 @@
 - **Basic & Livestream**: **Nein — Basic nur Studio.** Livestream ab Plus. Umgesetzt in FZ-018. `[Beantwortet 2026-07-04]`
 - **Kapazitäten je Kurstyp**: bleiben vorerst **pro Termin** gesetzt (keine Kurstyp-Standards) — Lisa: passt so. `[Beantwortet 2026-07-04: pro Termin]`
 - **Storno-/Buchungsfrist**: **2 h vor Start, einheitlich** für alle Kurse. `[Beantwortet 2026-07-04: passt]`
-- **Storno-Gebühr**: Regel bestätigt = **50 % des Kurspreises**. **Offen bleibt** die „Kurspreis"-Basis, da Preise (noch) nicht hinterlegt (s. u.) → keine Auto-Berechnung, v1 nur Vermerk. `[Teilweise: Regel ja, Preisbasis offen]`
+- **Storno-Gebühr**: **50 % des Kurspreises**; „Kurspreis" = **`kurstyp.einzelpreis`** (Einzelkurs-Preis je Kursart, admin-gepflegt — Entscheidung 2026-07-04). Betrag wird berechnet (FZ-016); **Abbuchung** bleibt manuell (kein Payment v1). `[Beantwortet 2026-07-04]`
 - **No-Show-Schwelle**: **3 No-Shows / 90 Tage**, keine Auto-Sperre. `[Beantwortet 2026-07-04: passt]`
 - **Early Access**: **Nein**, alle buchen gleichzeitig. FZ-014 killed. `[Beantwortet 2026-07-04]`
 - **Benachrichtigungskanal**: **Push aufs Handy.** Realer Versand = FZ-019 (aktuell Stub). `[Beantwortet 2026-07-04]`

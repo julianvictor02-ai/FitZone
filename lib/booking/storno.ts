@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { buchung, kurstermin, mitglied, tarif } from "@/lib/db/schema";
+import { buchung, kurstermin, kurstyp, mitglied, tarif } from "@/lib/db/schema";
 import { verarbeiteWarteliste } from "@/lib/booking/warteliste";
 
 // FZ-003 — Selbst-Stornierung mit Fristen/Gebühren-Flag (BR5).
@@ -22,8 +22,21 @@ export function stornoGebuehrFaellig(
   return jetzt.getTime() > start.getTime() - FRIST_MS;
 }
 
+// Stornogebühr = 50 % des Einzelkurs-Preises (FZ-016, Kundenentscheidung 2026-07-04).
+export const STORNO_GEBUEHR_ANTEIL = 0.5;
+
+// Konkreter Gebührenbetrag: nur wenn die Gebühr fällig ist UND der Kurspreis gepflegt
+// ist (sonst null → v1-Verhalten: Flag ohne Betrag, manuelle Abwicklung).
+export function berechneStornoGebuehr(
+  einzelpreis: number | null,
+  faellig: boolean,
+): number | null {
+  if (!faellig || einzelpreis == null) return null;
+  return Math.round(einzelpreis * STORNO_GEBUEHR_ANTEIL * 100) / 100;
+}
+
 export type StornoErgebnis =
-  | { status: "storniert"; gebuehrFaellig: boolean }
+  | { status: "storniert"; gebuehrFaellig: boolean; betrag: number | null }
   | { status: "keine_buchung" }
   | { status: "kurs_nicht_gefunden" };
 
@@ -39,7 +52,11 @@ export async function storniereBuchung(
 ): Promise<StornoErgebnis> {
   const { ergebnis, nachruecken } = await db.transaction(async (tx) => {
     const [termin] = await tx
-      .select({ start: kurstermin.start, status: kurstermin.status })
+      .select({
+        start: kurstermin.start,
+        status: kurstermin.status,
+        kurstypId: kurstermin.kurstypId,
+      })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
@@ -70,17 +87,26 @@ export async function storniereBuchung(
     const jetzt = new Date();
     const gebuehrFaellig = stornoGebuehrFaellig(termin.start, tarifInfo?.befreit ?? false, jetzt);
 
+    // Einzelkurs-Preis der Kursart (ungelockt) → konkreter Gebührenbetrag (FZ-016).
+    const [kt] = await tx
+      .select({ einzelpreis: kurstyp.einzelpreis })
+      .from(kurstyp)
+      .where(eq(kurstyp.kurstypId, termin.kurstypId));
+    const einzelpreis = kt?.einzelpreis != null ? Number(kt.einzelpreis) : null;
+    const betrag = berechneStornoGebuehr(einzelpreis, gebuehrFaellig);
+
     await tx
       .update(buchung)
       .set({
         buchungsstatus: "storniert",
         stornozeitpunkt: jetzt,
         stornoGebuehrFaellig: gebuehrFaellig,
+        stornoGebuehrBetrag: betrag != null ? betrag.toFixed(2) : null,
       })
       .where(eq(buchung.buchungId, b.id));
 
     return {
-      ergebnis: { status: "storniert" as const, gebuehrFaellig },
+      ergebnis: { status: "storniert" as const, gebuehrFaellig, betrag },
       nachruecken: termin.status === "geplant" && termin.start > jetzt,
     };
   });
