@@ -29,6 +29,9 @@ export default async function Home() {
                 <Link href="/admin/nachweis" className="underline">
                   Buchungsnachweis
                 </Link>
+                <Link href="/admin/no-show" className="underline">
+                  No-Show-Auswertung
+                </Link>
               </>
             )}
             {benutzer.rolle === "trainer" && (
