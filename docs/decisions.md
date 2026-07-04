@@ -5,6 +5,42 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-013: No-Show-Auswertung — Schwelle, Fenster, „nur Hinweis"
+
+**Kontext:** BR6 (No-Show-Tracking + Admin-Hinweis ab Schwelle, **keine** Auto-Sperre;
+auch Premium bleibt buchbar — W1). Spec §8 offen: exakte Schwelle (Lisa: „3–4 Mal") und
+Zeitfenster („hintereinander? pro Monat?"). Datenbasis vorhanden: `buchung.anwesenheit =
+no_show` (FZ-004).
+
+### Entscheidung
+- **Reine Lese-Aggregation**, kein Schema-/Statuswechsel. Engine
+  `lib/attendance/noshow.ts` (`ladeNoShowAuswertung`) zählt `no_show` je Mitglied,
+  markiert `hinweis = anzahl >= schwelle`. Admin-Report `app/admin/no-show` (nur Admin),
+  Zeilen ab Schwelle hervorgehoben, **Tarif** ausgewiesen (macht „auch Premium getrackt"
+  sichtbar). Kein Schreibpfad → strukturell keine Sperre möglich (BR6 erfüllt).
+- **Schwelle = 3** (zentrale Konstante `NO_SHOW_SCHWELLE`): unterer Rand von „3–4" →
+  frühere Sichtbarkeit; der Admin entscheidet die Konsequenz ohnehin manuell.
+- **Gleitendes Fenster = 90 Tage** (`NO_SHOW_FENSTER_TAGE`), gezählt nach **Kurs-Datum**
+  (`kurstermin.start`) — konsistent mit der Zählweise aus FZ-010 (Kurs-Datum statt
+  Buchungs-/Erfassungszeitpunkt). Beide Werte per Parameter überschreibbar (testbar).
+
+### Alternativen verworfen
+- „N hintereinander" (Streak): schwerer nachvollziehbar und weniger stabil als ein
+  Zeitfenster; „pro Zeitraum" entspricht Lisas „pro Monat"-Lesart besser.
+- Zählung nach Erfassungszeitpunkt (`anwesenheit_erfasst_am`): das No-Show-Ereignis
+  gehört zum Kurs — Kurs-Datum ist die fachlich richtige Achse.
+- Auto-Sperre/Flag am Mitglied ab Schwelle: BR6 verbietet automatische Konsequenzen
+  ausdrücklich; der Report ist rein informativ.
+
+### Konsequenzen
+- Positiv: No-Shows pro Mitglied auswertbar, Admin-Hinweis ab Schwelle; verifiziert
+  (`verify:fz013`, 9/9: Zählung, Schwelle, Fenster-Ausschluss, Premium getrackt,
+  Sortierung, Schwellen-Parameter); `next build` grün.
+- Negativ/Offen: Schwelle (3) und Fenster (90 Tage) sind Annahmen — mit Kundin bestätigen
+  (spec §8). Fenstergrenze nutzt server-lokale „jetzt − N Tage".
+
+---
+
 ## 2026-07-04 — FZ-012: Trainer-Notizen — Wiederverwendung der Anwesenheits-Mechanik
 
 **Kontext:** FZ-012 (Trainer-Notizen zu Teilnehmern, §7 Should-have, Start Phase 2).
