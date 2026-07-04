@@ -19,9 +19,14 @@ export default async function Home() {
               Angemeldet als <strong>{benutzer.email}</strong> ({benutzer.rolle})
             </span>
             {benutzer.rolle === "admin" && (
-              <Link href="/admin/mitglieder" className="underline">
-                Mitglieder-Verwaltung
-              </Link>
+              <>
+                <Link href="/admin/mitglieder" className="underline">
+                  Mitglieder-Verwaltung
+                </Link>
+                <Link href="/admin/kurstermine" className="underline">
+                  Kurstermin-Verwaltung
+                </Link>
+              </>
             )}
             {benutzer.rolle === "trainer" && (
               <Link href="/trainer" className="underline">
