@@ -19,3 +19,11 @@ export function darfVideoSehen(tarif: TarifName, mindestTarif: VideoMindestTarif
 export function erlaubteVideoTarife(tarif: TarifName): VideoMindestTarif[] {
   return (["Plus", "Premium"] as const).filter((m) => darfVideoSehen(tarif, m));
 }
+
+// FZ-018 — Livestream-Buchung nur ab Plus (Basic = nur Studio). Kundenentscheidung Lisa
+// 2026-07-04 (spec §8, Frage 4). Zugriff nur bei `tarif.livestream_zugriff === true`;
+// `null` (unbestimmt) und `false` sperren. Enforcement server-seitig in der Buchungs-/
+// Wartelisten-Engine (BR7).
+export function darfLivestreamBuchen(livestreamZugriff: boolean | null): boolean {
+  return livestreamZugriff === true;
+}

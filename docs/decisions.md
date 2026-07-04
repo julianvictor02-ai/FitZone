@@ -5,6 +5,72 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — Kundenentscheidungen zu den offenen §8-Fragen (Lisa)
+
+**Kontext:** Lisa hat die 12 offenen Punkte aus spec.md §8 in einem Durchgang beantwortet
+(Vorlage `docs/offene-fragen-kunde.md`). Die angenommenen Defaults werden damit verbindlich
+oder korrigiert.
+
+### Entscheidung
+- **Bestätigt (unveränderte Defaults):** Wartelisten-Obergrenze 5/Termin (FZ-002);
+  Basic 5/Kalendermonat (FZ-010); Plus kein Limit (FZ-010); Storno-/Buchungsfrist 2 h global
+  (FZ-003); No-Show 3/90 Tage, keine Auto-Sperre (FZ-013); Login per E-Mail (FZ-006);
+  Kapazität bleibt pro Termin (keine Kurstyp-Standards jetzt).
+- **Korrigiert → neuer Bau (FZ-018):** **Basic darf keine Livestreams buchen — nur Studio.**
+  Damit ist der in FZ-011 vertagte Livestream-Teil von BR7 entschieden und umgesetzt (siehe
+  eigener Eintrag unten).
+- **Early-Access verworfen (FZ-014 killed):** „alle können gleichzeitig buchen". BR9/W2 ist
+  damit endgültig gegen Early-Access entschieden; das `tarif.early_access`-Flag bleibt als
+  ungenutztes Feld (kein Schema-Rückbau nötig).
+- **Benachrichtigungskanal = Push (Handy) → FZ-019:** ersetzt die offene Kanalfrage aus
+  BR2/BR8. Realer Versand ist noch nicht gebaut (Stub `lib/notify.ts`); Umsetzung braucht
+  Web-Push-/Geräte-Infrastruktur und ist ein eigener Task.
+- **Stornogebühr = 50 % Kurspreis (Regel), aber weiter blockiert:** Preise werden bewusst
+  **nicht** hinterlegt (Frage 11 vertagt), daher fehlt die „Kurspreis"-Basis. v1 bleibt beim
+  Vermerk-Flag (FZ-003); die Automatik (FZ-016) bleibt blockiert bis Preise vorliegen.
+
+### Konsequenzen
+- Positiv: Fast alle §8-Annahmen sind bestätigt — die bisherigen Defaults stehen fest.
+- Offen bleibt nur noch: Passwort-Policy/Konto-Provisionierung (Login-Detail), „Kurspreis"-
+  Definition + Preise (für FZ-016), Kurstyp-Kapazitäts-Standards (später mit Marie/Tom),
+  sowie die technische Umsetzung von Push (FZ-019).
+
+---
+
+## 2026-07-04 — FZ-018: Basic = nur Studio (Livestream-Buchungs-Gate, BR7)
+
+**Kontext:** Kundenentscheidung (oben): Basic darf keine Livestreams buchen. FZ-011 hatte den
+Livestream-Teil von BR7 mangels Kundenfreigabe bewusst vertagt (kein Verhaltenswechsel ohne OK).
+
+### Entscheidung
+- **Server-seitiges Gate** `darfLivestreamBuchen(livestream_zugriff)` in `lib/content/zugriff.ts`
+  (nur `true` erlaubt; `null`/`false` sperren), erzwungen an **beiden Eintrittspunkten**:
+  `bucheKurstermin` und `warteAufKurstermin` (Basic kommt nicht mal auf die Livestream-
+  Warteliste → das Nachrücken kann ihn nie anbieten, kein zusätzlicher Guard nötig). Neuer
+  Status `livestream_gesperrt`.
+- **Datenmodell statt Namensprüfung:** Gate liest `tarif.livestream_zugriff`. Basic-Tarif von
+  `null` auf **`false`** gesetzt — im Seed (`scripts/seed.ts`) und in den Bestandsdaten (einmalige
+  Korrektur, da `onConflictDoNothing` bestehende Zeilen nicht aktualisiert).
+- **UI:** Die Kursliste (`app/kurse`) zeigt Livestream-Termine für nicht berechtigte Mitglieder
+  als **„Nur ab Plus"** statt eines Buchen-Buttons (Bestandsschutz: bereits Gebuchte/Wartende
+  behalten ihren Zustand). Durchsetzung bleibt server-seitig; die UI spiegelt nur.
+
+### Alternativen verworfen
+- Gate nur in der UI: umgehbar; BR7 verlangt Server-Durchsetzung (analog Kapazität/Limit).
+- Prüfung per Tarif-Name statt Flag: das modellierte `livestream_zugriff` ist die Quelle der
+  Wahrheit (spec §2) und bleibt bei künftigen Tarif-Änderungen korrekt.
+- Livestreams für Basic komplett ausblenden (wie On-Demand-Videos in FZ-011): „Nur ab Plus"
+  ist freundlicher und wirkt als sanfter Upsell, ohne Info zu verstecken.
+
+### Konsequenzen
+- Positiv: BR7 vollständig (On-Demand aus FZ-011 + Livestream jetzt); verifiziert
+  (`verify:fz018`, 7/7) inkl. Buchung, Warteliste, Studio-Gegenprobe, Plus erlaubt; keine
+  Regression (fz001/002/010 grün); build grün.
+- Negativ/Risiko: `null` wird wie „gesperrt" behandelt — für einen künftigen Tarif ohne
+  gesetztes Flag muss `livestream_zugriff` explizit gepflegt werden.
+
+---
+
 ## 2026-07-04 — FZ-013: No-Show-Auswertung — Schwelle, Fenster, „nur Hinweis"
 
 **Kontext:** BR6 (No-Show-Tracking + Admin-Hinweis ab Schwelle, **keine** Auto-Sperre;
