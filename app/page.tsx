@@ -29,9 +29,14 @@ export default async function Home() {
               </Link>
             )}
             {benutzer.rolle === "mitglied" && (
-              <Link href="/kurse" className="underline">
-                Kurse buchen
-              </Link>
+              <>
+                <Link href="/kurse" className="underline">
+                  Kurse buchen
+                </Link>
+                <Link href="/mein-bereich" className="underline">
+                  Mein Bereich
+                </Link>
+              </>
             )}
             <form action={logout}>
               <button type="submit" className="underline">

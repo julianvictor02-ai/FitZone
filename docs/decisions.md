@@ -5,6 +5,34 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-007: Mitglieder-Selbstansicht — read-only, eigene Daten app-seitig
+
+**Kontext:** Umsetzung FZ-007 (Mitglieder-Selbstansicht). §2b/§7/§11: Mitglied sieht nur
+eigene Daten (Tarif, Status, `mitgliedschaft_bis`, eigene Buchungen/Historie,
+Wartelisten-Status), **nur lesend**; keine fremden Namen.
+
+### Entscheidung
+- **Reine RSC-Seite `app/mein-bereich/page.tsx`, keine Server-Action/Mutation.** Jede Query
+  filtert hart auf `mitglied_id = Session-Mitglied` (konsistent mit FZ-005/§2b, RLS später).
+  Tarif/Status/Pausieren bleiben Admin-Sache (FZ-017 killed) — bewusst keine Bearbeitung.
+- **Wartelisten-Position** wird wie in der Kursliste dynamisch aus `zeitstempel` berechnet
+  (FIFO, BR3), nicht gespeichert — konsistent mit FZ-002.
+- **Buchungen inkl. Historie** (bestätigt + storniert) in einer Liste, jüngste zuerst; zeigt
+  den unveränderbaren `buchungszeitpunkt` (Nachweis, NFR), Anwesenheit und Storno-Infos.
+- **Kein Schema-/Engine-Change** — Feature ist reine Lese-Aggregation vorhandener Daten.
+
+### Alternativen verworfen
+- Editierbare Felder (z. B. Tarifwunsch): widerspricht §2b/„nur lesend" und FZ-017.
+- Gespeicherte Wartelisten-Position: Drift-anfällig (siehe decisions FZ-002).
+
+### Konsequenzen
+- Positiv: Selbstansicht ohne neue Angriffsfläche (read-only); Isolation verifiziert
+  (`verify:fz007`, 9/9: nur eigene Buchungen/WL, korrekte FIFO-Position A=1/B=2); build grün.
+- Negativ/Risiko: Sichtbarkeit rein app-seitig durchgesetzt (kein RLS-Netz darunter, bis
+  ergänzt) — jede Query muss den `mitglied_id`-Filter konsequent setzen.
+
+---
+
 ## 2026-07-04 — FZ-005: Trainer-Ansicht — Sichtbarkeit app-seitig, Login-Provisionierung
 
 **Kontext:** Umsetzung FZ-005 (Trainer-Login: eigener Kursplan + Anwesenheit abhaken) auf
