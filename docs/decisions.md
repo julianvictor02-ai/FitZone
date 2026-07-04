@@ -5,6 +5,33 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — PWA + Deployment (Vercel) für „aufs iPhone"
+
+**Kontext:** FitZone soll aufs iPhone. Es ist eine Web-App (kein App Store); der Weg ist
+Deploy + „Zum Home-Bildschirm" (PWA). Zusätzlich verlangt iOS-Web-Push (FZ-019) eine
+installierte PWA.
+
+### Entscheidung
+- **PWA-Manifest** `public/manifest.webmanifest` (`display: standalone`, theme/background,
+  Icons) + `metadata`/`viewport` in `app/layout.tsx` (Manifest-Link, `appleWebApp.capable`
+  für iOS-Standalone, `apple-touch-icon`, `theme-color`).
+- **Icons dependency-frei erzeugt** (`scripts/gen-icons.mjs`, nur `node:zlib`): weißes
+  Hantel-Symbol auf Pinie-Grün (#1f5c46), 192/512 (maskable) + 180 (Apple). Keine
+  Bild-/Build-Dependency, reproduzierbar per `node scripts/gen-icons.mjs`.
+- **`vercel.json`** plant den Warteliste-Cron (`/api/cron/warteliste`, alle 10 Min); Vercel
+  sendet automatisch `Authorization: Bearer <CRON_SECRET>` (Route prüft das bereits).
+- **Anleitung** `docs/deployment.md`: Env-Vars, Migrationen, VAPID-Keys, iPhone-Installation,
+  offene Betriebspunkte (Login-Provisionierung, Kurspreise).
+
+### Konsequenzen
+- Positiv: App ist installierbar (Home-Bildschirm, Standalone) und für iOS-Push vorbereitet;
+  `next build` grün.
+- Offen/Betrieb: **Hobby-Plan** führt Crons nur ~täglich aus (30-Min-Fenster → Pro oder
+  externer Cron; Storno-Nachrücken bleibt live). Deploy selbst (Vercel-Login, Env-Vars) ist
+  ein manueller, interaktiver Schritt. iOS-Push erst ab 16.4 und nur aus der installierten PWA.
+
+---
+
 ## 2026-07-04 — FZ-016: Stornogebühr-Berechnung — Kurspreis pro Kurstyp
 
 **Kontext:** Lisa hat die Gebührenregel bestätigt (§8 F7): **Stornogebühr = 50 % des
