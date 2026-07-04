@@ -36,6 +36,9 @@ export default async function Home() {
                 <Link href="/mein-bereich" className="underline">
                   Mein Bereich
                 </Link>
+                <Link href="/videos" className="underline">
+                  Videos
+                </Link>
               </>
             )}
             <form action={logout}>

@@ -9,6 +9,7 @@ import {
   kurstyp,
   kurstermin,
   buchung,
+  onDemandVideo,
 } from "../lib/db/schema";
 
 // Einmaliger Bootstrap für die lokale Verifikation (idempotent):
@@ -149,18 +150,30 @@ async function main() {
     ]);
   }
 
+  // Demo-On-Demand-Videos (FZ-011), nur anlegen, wenn noch keine existieren.
+  const vorhandeneVideos = await db.select({ id: onDemandVideo.videoId }).from(onDemandVideo);
+  if (vorhandeneVideos.length === 0) {
+    await db.insert(onDemandVideo).values([
+      { titel: "Yoga Flow für Einsteiger", kurstypId: kYoga.kurstypId, level: "Anfaenger", dauerMinuten: 30, mindestTarif: "Plus", plattform: "Vimeo", url: "https://vimeo.example/yoga-flow" },
+      { titel: "HIIT Express 20", kurstypId: kHIIT.kurstypId, level: "Mittel", dauerMinuten: 20, mindestTarif: "Plus", plattform: "Vimeo", url: "https://vimeo.example/hiit-express" },
+      { titel: "Premium Deep Core", kurstypId: kYoga.kurstypId, level: "Fortgeschritten", dauerMinuten: 45, mindestTarif: "Premium", plattform: "Vimeo", url: "https://vimeo.example/deep-core" },
+    ]);
+  }
+
   const anzahlTermine = (
     await db
       .select({ id: kurstermin.kursterminId })
       .from(kurstermin)
       .where(and(eq(kurstermin.status, "geplant"), gt(kurstermin.start, new Date())))
   ).length;
+  const anzahlVideos = (await db.select({ id: onDemandVideo.videoId }).from(onDemandVideo)).length;
 
   console.log("Bootstrap fertig:");
   console.log(`  Admin:    ${ADMIN_EMAIL} (rolle=admin)`);
   console.log(`  Mitglied: ${MEMBER_EMAIL} → ${m.name} (Tarif Plus)`);
   console.log(`  Trainer:  ${tr.name} (${TRAINER_EMAIL})${trainerAuthId ? " → rolle=trainer verknüpft" : " — kein Auth-Konto, Login-Verknüpfung übersprungen"}`);
   console.log(`  Buchbare Kurstermine: ${anzahlTermine}`);
+  console.log(`  On-Demand-Videos: ${anzahlVideos}`);
   process.exit(0);
 }
 

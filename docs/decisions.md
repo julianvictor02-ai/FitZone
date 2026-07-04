@@ -5,6 +5,38 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-011: Content-Zugriff — On-Demand umgesetzt, Livestream-Gate vertagt
+
+**Kontext:** BR7 (Content-Zugriff nach Tarif). Bestätigt: On-Demand ab Plus (Basic keine).
+Ausdrücklich **offen** (spec §8): „Darf Basic Livestreams buchen?" (Basic = nur Studio genannt,
+Livestream unklar).
+
+### Entscheidung
+- **On-Demand vollständig umgesetzt**: `lib/content/zugriff.ts` (`darfVideoSehen`,
+  `erlaubteVideoTarife`, ordinale `TARIF_RANG`) + Seite `app/videos` mit server-seitigem
+  Tarif-Filter (`mindest_tarif <= Mitgliedertarif`). Basic sieht keine Videos und bekommt
+  keine URL ausgeliefert (Zugriff app-seitig blockiert). Deckt die BR7-Akzeptanzkriterien ab.
+- **Livestream-Buchungs-Gate vertagt**: kein serverseitiger Block, dass Basic
+  `modus=Livestream` bucht. Grund: explizit offene Produktfrage — ein Gate würde bestehendes
+  Buchungsverhalten für Basic **ändern**; ohne Kundenfreigabe ist „nicht einschränken" die
+  sichere, umkehrbare Default-Wahl. Nutzeranfrage dazu gestellt (unbeantwortet).
+
+### Alternativen verworfen
+- `tarif.on_demand_zugriff`-Boolean als Gate: die ordinale Schwelle `mindest_tarif` (spec §10)
+  ist ausdrucksstärker (Plus- vs. Premium-Videos) und schließt Basic ohnehin ein.
+- Livestream-Gate jetzt konservativ setzen (Basic nur Studio): würde eine offene Frage per
+  Annahme entscheiden und das Basic-Buchungsverhalten ändern — bei fehlender Bestätigung zu riskant.
+
+### Konsequenzen
+- Positiv: BR7-Kern (On-Demand) erzwungen und verifiziert (`verify:fz011`, 9/9); build grün.
+- Negativ/Offen: Livestream-Buchung für Basic bleibt bis zur Kundenklärung unverändert
+  (Basic kann Livestream aktuell buchen). Bei „Nein" später zentrales Gate über
+  `tarif.livestream_zugriff` in `bucheKurstermin`/`warteAufKurstermin` nachrüsten. Kein
+  Play-/Detail-Route vorhanden; die Listen-Filterung ist die Durchsetzung (künftige
+  Play-Route müsste `darfVideoSehen` erneut prüfen).
+
+---
+
 ## 2026-07-04 — FZ-010: Buchungslimit — Zählweise, Monatsdefinition, Durchsetzungspunkte
 
 **Kontext:** Umsetzung BR4 (Basic 5/Monat, Plus/Premium unbegrenzt). Spec §8 offen:
