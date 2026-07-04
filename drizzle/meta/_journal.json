@@ -15,6 +15,13 @@
       "when": 1783090407682,
       "tag": "0001_worthless_puck",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783124737619,
+      "tag": "0002_demonic_corsair",
+      "breakpoints": true
     }
   ]
 }

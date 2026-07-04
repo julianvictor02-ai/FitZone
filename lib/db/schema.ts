@@ -127,6 +127,9 @@ export const buchung = pgTable(
       .defaultNow(),
     stornozeitpunkt: timestamp("stornozeitpunkt", { withTimezone: true }),
     anwesenheit: anwesenheit("anwesenheit").notNull().default("offen"),
+    // Zeitstempel der Anwesenheitserfassung (FZ-004, "mit Zeitstempel"): wann der
+    // Trainer zuletzt abgehakt hat. null solange offen/nicht erfasst. Auditierbar (NFR).
+    anwesenheitErfasstAm: timestamp("anwesenheit_erfasst_am", { withTimezone: true }),
     stornoGebuehrFaellig: boolean("storno_gebuehr_faellig").notNull().default(false),
     stornoGebuehrBetrag: numeric("storno_gebuehr_betrag", { precision: 10, scale: 2 }),
     trainerNotiz: text("trainer_notiz"),

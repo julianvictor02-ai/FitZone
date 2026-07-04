@@ -14,7 +14,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "verify:fz001": "tsx scripts/verify-fz001.ts",
     "verify:fz002": "tsx scripts/verify-fz002.ts",
-    "verify:fz003": "tsx scripts/verify-fz003.ts"
+    "verify:fz003": "tsx scripts/verify-fz003.ts",
+    "verify:fz004": "tsx scripts/verify-fz004.ts"
   },
   "dependencies": {
     "next": "^15.1.4",

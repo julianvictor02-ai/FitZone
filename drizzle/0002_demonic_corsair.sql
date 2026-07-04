@@ -1,0 +1,1 @@
+ALTER TABLE "buchung" ADD COLUMN "anwesenheit_erfasst_am" timestamp with time zone;

@@ -5,6 +5,39 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-04 — FZ-004: Anwesenheitserfassung — Zeitstempel-Spalte, Engine-Scope, Zeitgrenze
+
+**Kontext:** Umsetzung FZ-004. Drei Punkte: (1) Das Feature heißt „Anwesenheitserfassung
+**mit Zeitstempel**", aber die Buchung-Entität (spec §2) hat nur das Enum `anwesenheit`,
+keinen Erfassungs-Zeitpunkt. (2) Backlog trennt FZ-004 (Logik) von FZ-005 (Trainer-UI).
+(3) Spec §2 sagt „nach Kursende" erfassen — modelliert ist aber nur `start` (kein Kursende).
+
+### Entscheidung
+- **Neue Spalte `buchung.anwesenheit_erfasst_am`** (nullable `timestamptz`, Migration
+  `drizzle/0002`). Erfüllt „mit Zeitstempel" wörtlich und die Audit-NFR; wird bei jeder
+  Erfassung gesetzt, bei Korrektur auf `offen` wieder `null`. `buchungszeitpunkt` bleibt
+  unangetastet (NFR, „nicht verhandelbar").
+- **Scope = Engine + Server-Action**, keine UI. `lib/attendance/anwesenheit.ts`
+  (`erfasseAnwesenheit`) erzwingt Trainer-Ownership (§2b) und aktive Buchung;
+  `app/trainer/actions.ts` löst die Trainer-Identität aus der Session. Die **Trainer-
+  Oberfläche bleibt FZ-005**. Verifiziert per `verify:fz004` (10/10, Direkt-Lib wie FZ-001–003).
+- **Zeitgrenze = Kursbeginn** (`start <= jetzt` → sonst `zu_frueh`), da kein Kursende
+  modelliert ist. Pragmatische Auslegung von „nach Kursende".
+
+### Alternativen verworfen
+- „mit Zeitstempel" als durch `buchungszeitpunkt` abgedeckt lesen (keine Spalte): der
+  Erfassungszeitpunkt wäre nicht nachweisbar — widerspricht dem Wortlaut + Audit-NFR.
+- FZ-005 (Trainer-UI) gleich mitziehen: verwässert den Backlog-Schnitt; die UI ist eigenes Item.
+- Echtes Kursende-Feld einführen: Modell-/Pflegeaufwand ohne bestätigten Bedarf (spec §8).
+
+### Konsequenzen
+- Positiv: auditierbare Anwesenheit (wer/wann); testbare, wiederverwendbare Engine als
+  Basis für Trainer-UI (FZ-005) und No-Show-Auswertung (BR6/FZ-013).
+- Negativ/Risiko: Action noch ohne Aufrufer bis FZ-005; „nach Kursende"=Kursbeginn und der
+  Admin-Erfassungspfad (§2b) sind Annahmen — bei Bedarf ergänzen/mit Kundin bestätigen.
+
+---
+
 ## 2026-07-03 — FZ-006: Identitätsmodell (benutzer) + app-seitige Autorisierung
 
 **Kontext:** FZ-006 (Mitgliederstammdaten, admin-gepflegt) braucht eine Auth-/Rollen-
