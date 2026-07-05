@@ -54,8 +54,8 @@ export default async function MeinBereichPage() {
   const me = await requireRolle("mitglied");
   if (!me.mitgliedId) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-bold">Mein Bereich</h1>
+      <main className="page">
+        <h1 className="text-2xl font-bold text-ink">Mein Bereich</h1>
         <p className="mt-3 text-sm text-red-700">
           Deinem Konto ist kein Mitglied-Profil zugeordnet. Bitte an den Admin wenden.
         </p>
@@ -131,8 +131,8 @@ export default async function MeinBereichPage() {
     (reihenfolge.get(kursterminId)?.indexOf(mitgliedId) ?? -1) + 1;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-2xl font-bold">Mein Bereich</h1>
+    <main className="page">
+      <h1 className="text-2xl font-bold text-ink">Mein Bereich</h1>
       <p className="mt-1 text-sm text-gray-500">
         Nur lesend. Tarif/Status ändert der Admin.{" "}
         <Link href="/kurse" className="underline">

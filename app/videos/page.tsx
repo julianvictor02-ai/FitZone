@@ -13,8 +13,8 @@ export default async function VideosPage() {
   const me = await requireRolle("mitglied");
   if (!me.mitgliedId) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-bold">On-Demand-Videos</h1>
+      <main className="page">
+        <h1 className="text-2xl font-bold text-ink">On-Demand-Videos</h1>
         <p className="mt-3 text-sm text-red-700">
           Deinem Konto ist kein Mitglied-Profil zugeordnet. Bitte an den Admin wenden.
         </p>
@@ -49,8 +49,8 @@ export default async function VideosPage() {
     : [];
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-2xl font-bold">On-Demand-Videos</h1>
+    <main className="page">
+      <h1 className="text-2xl font-bold text-ink">On-Demand-Videos</h1>
       <p className="mt-1 text-sm text-gray-500">
         Dein Tarif: <strong>{tarifName}</strong>. On-Demand ist ab Plus verfügbar.{" "}
         <Link href="/mein-bereich" className="underline">
@@ -81,7 +81,7 @@ export default async function VideosPage() {
                   href={v.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded bg-black px-4 py-1.5 text-sm text-white"
+                  className="inline-flex min-h-11 items-center rounded-btn bg-brand-strong px-4 text-sm font-medium text-white hover:bg-brand-strong-hover"
                 >
                   Ansehen{v.plattform ? ` (${v.plattform})` : ""}
                 </a>

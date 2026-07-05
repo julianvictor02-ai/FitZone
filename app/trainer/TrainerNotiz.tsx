@@ -54,13 +54,13 @@ export function TrainerNotiz({
         onChange={(e) => setWert(e.target.value)}
         placeholder="Notiz (z. B. wirkte verletzt)"
         rows={2}
-        className="w-full resize-y rounded border border-gray-300 px-2 py-1 text-xs"
+        className="input text-sm"
       />
       <div className="flex items-center gap-2">
         <button
           onClick={speichern}
           disabled={pending || !geaendert}
-          className="rounded border border-gray-400 px-2.5 py-1 text-xs disabled:opacity-50"
+          className="btn btn-outline text-sm disabled:opacity-50"
         >
           {wert.trim() === "" && gespeichert !== "" ? "Löschen" : "Notiz speichern"}
         </button>
