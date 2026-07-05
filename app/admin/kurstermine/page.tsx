@@ -77,56 +77,49 @@ export default async function KurstermineAdminPage() {
   const wlMap = new Map(warteliste.map((w) => [w.kursterminId, w.anzahl]));
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-2xl font-bold">Kurstermin-Verwaltung</h1>
-      <p className="mt-1 text-sm text-gray-500">
+    <main className="page">
+      <h1 className="text-2xl font-bold text-ink">Kurstermin-Verwaltung</h1>
+      <p className="mt-1 text-sm text-muted">
         Absagen oder verschieben — betroffene Mitglieder (Buchung + Warteliste) werden
         automatisch benachrichtigt (FZ-009, BR8).
       </p>
 
-      <ul className="mt-8 divide-y divide-gray-200">
+      <ul className="mt-8 space-y-3">
         {termine.map((t) => {
           const gebucht = belegungMap.get(t.kursterminId) ?? 0;
           const wl = wlMap.get(t.kursterminId) ?? 0;
           return (
-            <li key={t.kursterminId} className="py-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="font-medium">
-                    {t.kurstyp}{" "}
-                    <span className="text-sm font-normal text-gray-500">· {t.modus}</span>
-                    {t.status === "verschoben" && (
-                      <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-                        {STATUS_LABEL[t.status]}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {DATUM.format(t.start)} Uhr · {t.trainer} · {gebucht} gebucht
-                    {wl > 0 && ` · ${wl} Warteliste`}
-                  </div>
-                </div>
+            <li key={t.kursterminId} className="rounded-card border border-gray-200 p-4">
+              <div className="font-medium text-ink">
+                {t.kurstyp}{" "}
+                <span className="text-sm font-normal text-muted">· {t.modus}</span>
+                {t.status === "verschoben" && (
+                  <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                    {STATUS_LABEL[t.status]}
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-muted">
+                {DATUM.format(t.start)} Uhr · {t.trainer} · {gebucht} gebucht
+                {wl > 0 && ` · ${wl} Warteliste`}
               </div>
 
-              <div className="mt-2 flex flex-wrap items-end gap-4">
+              <div className="mt-3 flex flex-col gap-3">
                 {/* Verschieben — nur aus geplant zulässig (spec §2). */}
                 {t.status === "geplant" && (
-                  <form action={verschiebe} className="flex items-end gap-2">
+                  <form action={verschiebe} className="flex flex-col gap-2">
                     <input type="hidden" name="kursterminId" value={t.kursterminId} />
-                    <label className="flex flex-col gap-1 text-xs">
+                    <label className="flex flex-col gap-1 text-sm text-muted">
                       Neuer Start
                       <input
                         type="datetime-local"
                         name="neuerStart"
                         required
                         defaultValue={datetimeLocal(t.start)}
-                        className="rounded border border-gray-300 px-2 py-1"
+                        className="input"
                       />
                     </label>
-                    <button
-                      type="submit"
-                      className="rounded border border-gray-400 px-3 py-1 text-xs"
-                    >
+                    <button type="submit" className="btn btn-outline btn-block">
                       Verschieben
                     </button>
                   </form>
@@ -135,10 +128,7 @@ export default async function KurstermineAdminPage() {
                 {/* Absagen — aus geplant und verschoben zulässig. */}
                 <form action={sageAb}>
                   <input type="hidden" name="kursterminId" value={t.kursterminId} />
-                  <button
-                    type="submit"
-                    className="rounded bg-red-600 px-3 py-1 text-xs text-white"
-                  >
+                  <button type="submit" className="btn btn-danger btn-block">
                     Absagen
                   </button>
                 </form>
@@ -147,7 +137,9 @@ export default async function KurstermineAdminPage() {
           );
         })}
         {termine.length === 0 && (
-          <li className="py-4 text-sm text-gray-500">Keine anstehenden Kurstermine.</li>
+          <li className="rounded-card border border-gray-200 p-4 text-sm text-muted">
+            Keine anstehenden Kurstermine.
+          </li>
         )}
       </ul>
     </main>

@@ -28,8 +28,8 @@ export default async function TrainerPage() {
   const me = await requireRolle("trainer");
   if (!me.trainerId) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-bold">Mein Kursplan</h1>
+      <main className="page">
+        <h1 className="text-2xl font-bold text-ink">Mein Kursplan</h1>
         <p className="mt-3 text-sm text-red-700">
           Deinem Konto ist kein Trainer-Profil zugeordnet. Bitte an den Admin wenden.
         </p>
@@ -85,9 +85,9 @@ export default async function TrainerPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-2xl font-bold">Mein Kursplan</h1>
-      <p className="mt-1 text-sm text-gray-500">
+    <main className="page">
+      <h1 className="text-2xl font-bold text-ink">Mein Kursplan</h1>
+      <p className="mt-1 text-sm text-muted">
         Nur deine Kurse. Anwesenheit lässt sich ab Kursbeginn abhaken (FZ-005).
       </p>
 
@@ -96,7 +96,7 @@ export default async function TrainerPage() {
           const liste = byTermin.get(t.kursterminId) ?? [];
           const erfassbar = t.start <= jetzt;
           return (
-            <li key={t.kursterminId} className="rounded border border-gray-200 p-4">
+            <li key={t.kursterminId} className="rounded-card border border-gray-200 p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div className="font-medium">
                   {t.kurstyp}{" "}

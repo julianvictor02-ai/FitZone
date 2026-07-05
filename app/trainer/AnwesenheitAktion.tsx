@@ -23,8 +23,9 @@ const OPTIONEN: { wert: Exclude<AnwesenheitWert, "offen">; label: string; aktiv:
   { wert: "entschuldigt", label: "Entschuldigt", aktiv: "bg-amber-600 text-white border-amber-600" },
 ];
 
-const base = "rounded border px-2.5 py-1 text-xs disabled:opacity-50";
-const inaktiv = "border-gray-300 text-gray-700 hover:border-gray-500";
+const base =
+  "inline-flex min-h-11 items-center rounded-btn border px-3 text-sm font-medium disabled:opacity-50";
+const inaktiv = "border-gray-300 text-ink hover:border-brand";
 
 export function AnwesenheitAktion({
   kursterminId,

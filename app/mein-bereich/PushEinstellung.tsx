@@ -107,7 +107,7 @@ export function PushEinstellung({ vapidKey }: { vapidKey: string | null }) {
           <button
             onClick={aktiviere}
             disabled={busy}
-            className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="inline-flex min-h-11 items-center rounded-btn bg-brand-strong px-4 text-sm font-medium text-white hover:bg-brand-strong-hover disabled:opacity-50"
           >
             {busy ? "…" : "Aktivieren"}
           </button>

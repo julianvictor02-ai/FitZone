@@ -8,8 +8,8 @@ export default async function LoginPage({
   const { fehler } = await searchParams;
 
   return (
-    <main className="mx-auto max-w-sm px-6 py-16">
-      <h1 className="text-2xl font-bold">Anmelden</h1>
+    <main className="page">
+      <h1 className="text-2xl font-bold text-ink">Anmelden</h1>
       {fehler && (
         <p className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
           Anmeldung fehlgeschlagen. E-Mail oder Passwort prüfen.
@@ -22,7 +22,7 @@ export default async function LoginPage({
             type="email"
             name="email"
             required
-            className="rounded border border-gray-300 px-3 py-2"
+            className="min-h-11 rounded border border-gray-300 px-3 py-2"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -31,13 +31,10 @@ export default async function LoginPage({
             type="password"
             name="password"
             required
-            className="rounded border border-gray-300 px-3 py-2"
+            className="min-h-11 rounded border border-gray-300 px-3 py-2"
           />
         </label>
-        <button
-          type="submit"
-          className="mt-2 rounded bg-black px-4 py-2 text-white"
-        >
+        <button type="submit" className="btn btn-primary btn-block mt-2">
           Anmelden
         </button>
       </form>

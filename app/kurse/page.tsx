@@ -32,8 +32,8 @@ export default async function KursePage({
   const me = await requireRolle("mitglied");
   if (!me.mitgliedId) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-bold">Kurse buchen</h1>
+      <main className="page">
+        <h1 className="text-2xl font-bold text-ink">Kurse buchen</h1>
         <p className="mt-3 text-sm text-red-700">
           Deinem Konto ist kein Mitglied-Profil zugeordnet. Bitte an den Admin wenden.
         </p>
@@ -131,8 +131,8 @@ export default async function KursePage({
   const filterLink = (wert: string | null) => (wert ? `/kurse?modus=${wert}` : "/kurse");
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-2xl font-bold">Kurse buchen</h1>
+    <main className="page">
+      <h1 className="text-2xl font-bold text-ink">Kurse buchen</h1>
       <p className="mt-1 text-sm text-gray-500">
         Freie Plätze als Anzahl (keine Namen). Volle Kurse: Warteliste (max.{" "}
         {MAX_WARTELISTE}, FIFO).
@@ -147,10 +147,10 @@ export default async function KursePage({
           <Link
             key={f.label}
             href={filterLink(f.wert)}
-            className={`rounded border px-3 py-1 ${
+            className={`inline-flex min-h-11 items-center rounded-btn border px-3 ${
               modusFilter === f.wert || (!modusFilter && f.wert === null)
-                ? "border-black bg-black text-white"
-                : "border-gray-300"
+                ? "border-brand-strong bg-brand-strong text-white"
+                : "border-gray-300 text-ink"
             }`}
           >
             {f.label}

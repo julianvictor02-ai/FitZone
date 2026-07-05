@@ -44,7 +44,8 @@ const AKTUALISIEREN = new Set([
   "platz_frei",
 ]);
 
-const btn = "rounded px-4 py-1.5 text-sm disabled:cursor-not-allowed";
+const btn =
+  "inline-flex min-h-11 items-center justify-center rounded-btn px-4 text-sm font-medium disabled:cursor-not-allowed";
 
 const EUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
@@ -99,7 +100,7 @@ export function KursterminAktion({
         <button
           onClick={() => run(() => bucheKursterminAction(kursterminId))}
           disabled={pending}
-          className={`${btn} bg-black text-white disabled:bg-gray-300`}
+          className={`${btn} bg-brand-strong text-white hover:bg-brand-strong-hover disabled:bg-gray-300`}
         >
           {pending ? "…" : "Buchen"}
         </button>
@@ -109,7 +110,7 @@ export function KursterminAktion({
         <button
           onClick={() => run(() => warteAction(kursterminId))}
           disabled={pending}
-          className={`${btn} border border-black disabled:opacity-50`}
+          className={`${btn} border border-gray-400 text-ink hover:border-brand disabled:opacity-50`}
         >
           {pending ? "…" : "Warteliste beitreten"}
         </button>
@@ -119,7 +120,7 @@ export function KursterminAktion({
         <button
           onClick={() => run(() => bestaetigeNachrueckungAction(kursterminId))}
           disabled={pending}
-          className={`${btn} bg-green-700 text-white disabled:bg-gray-300`}
+          className={`${btn} bg-brand-strong text-white hover:bg-brand-strong-hover disabled:bg-gray-300`}
         >
           {pending ? "…" : `Nachrücken bestätigen${frist ? ` (bis ${frist})` : ""}`}
         </button>

@@ -1,12 +1,149 @@
 @import "tailwindcss";
 
+/* ── Zentrale Design-Tokens (eine Quelle der Wahrheit) ─────────────────────
+   Als @theme registriert, damit Utilities wie bg-brand, text-muted,
+   border-surface-border überall verfügbar sind (Tailwind v4). */
+@theme {
+  /* Farben */
+  --color-background: #ffffff; /* Seiten-Hintergrund */
+  --color-surface: #f0fdf4; /* sehr helles Grün: Karten/Flächen */
+  --color-surface-border: #dcfce7; /* Rahmen auf hellen Flächen */
+  --color-brand: #22c55e; /* Akzent: aktive Marker, Rahmen, Flächen */
+  --color-brand-strong: #15803d; /* Buttons mit weißer Schrift (WCAG AA ~5:1) */
+  --color-brand-strong-hover: #166534; /* Button-Hover */
+  --color-ink: #1f2937; /* Text primär */
+  --color-muted: #6b7280; /* Text sekundär */
+
+  /* Radius */
+  --radius-card: 14px;
+  --radius-btn: 10px;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Spacing-Skala (4er-Raster) für konsistente vertikale Abstände */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-ink);
   font-family: system-ui, -apple-system, sans-serif;
+  font-size: 16px; /* lesbare Basis, verhindert iOS-Zoom bei Inputs */
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Sichtbarer Fokus für Tastatur-/Screenreader-Nutzung */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-strong);
+  outline-offset: 2px;
+}
+
+/* ── Wiederverwendbare UI-Bausteine ───────────────────────────────────── */
+
+/* Zentrierter Content-Container, mobile-first, durchgängig 16px Seitenabstand */
+.page {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+}
+
+/* Karte / Fläche */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+}
+
+/* Buttons – Mindest-Touch-Target 44px */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-btn);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--color-brand-strong);
+  color: #ffffff;
+  border: 1px solid transparent;
+}
+.btn-primary:not(:disabled):hover {
+  background: var(--color-brand-strong-hover);
+}
+.btn-outline {
+  background: #ffffff;
+  color: var(--color-ink);
+  border: 1px solid #d1d5db;
+}
+.btn-outline:not(:disabled):hover {
+  border-color: var(--color-brand);
+  background: var(--color-surface);
+}
+.btn-danger {
+  background: #dc2626; /* weiße Schrift ~4.8:1, WCAG AA */
+  color: #ffffff;
+  border: 1px solid transparent;
+}
+.btn-danger:not(:disabled):hover {
+  background: #b91c1c;
+}
+.btn-block {
+  width: 100%;
+}
+
+/* Formularfelder – 44px hoch, 16px Schrift (kein iOS-Zoom), volle Breite */
+.input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid #d1d5db;
+  border-radius: var(--radius-btn);
+  background: #ffffff;
+  color: var(--color-ink);
+  font-size: 16px;
+}
+textarea.input {
+  min-height: 72px;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+/* Gestapelter Navigations-Eintrag (mobiltauglich, 44px Touch-Target) */
+.navlink {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-btn);
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  color: var(--color-ink);
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+.navlink:hover {
+  border-color: var(--color-brand);
 }

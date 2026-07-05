@@ -2,76 +2,69 @@ import Link from "next/link";
 import { getBenutzer } from "@/lib/auth/benutzer";
 import { logout } from "./login/actions";
 
+// Navigations-Ziele je Rolle (Labels/Hrefs unverändert gegenüber vorher).
+const NAV: Record<string, { href: string; label: string }[]> = {
+  admin: [
+    { href: "/admin/mitglieder", label: "Mitglieder-Verwaltung" },
+    { href: "/admin/kurstermine", label: "Kurstermin-Verwaltung" },
+    { href: "/admin/nachweis", label: "Buchungsnachweis" },
+    { href: "/admin/no-show", label: "No-Show-Auswertung" },
+    { href: "/admin/kurstypen", label: "Kurspreise" },
+  ],
+  trainer: [{ href: "/trainer", label: "Mein Kursplan" }],
+  mitglied: [
+    { href: "/kurse", label: "Kurse buchen" },
+    { href: "/mein-bereich", label: "Mein Bereich" },
+    { href: "/videos", label: "Videos" },
+  ],
+};
+
 export default async function Home() {
   const benutzer = await getBenutzer();
+  const links = benutzer ? NAV[benutzer.rolle] ?? [] : [];
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-3xl font-bold">FitZone</h1>
-      <p className="mt-2 text-gray-600">
-        Kursbuchung, Warteliste und Anwesenheit für das FitZone-Studio.
-      </p>
+    <main className="page">
+      <header className="pt-1">
+        <h1 className="text-2xl font-bold text-ink">FitZone</h1>
+        <p className="mt-1 text-sm text-muted">
+          Kursbuchung, Warteliste und Anwesenheit für das FitZone-Studio.
+        </p>
+      </header>
 
-      <div className="mt-8">
-        {benutzer ? (
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-gray-600">
-              Angemeldet als <strong>{benutzer.email}</strong> ({benutzer.rolle})
+      {benutzer ? (
+        <div className="mt-6 flex flex-col gap-4">
+          <div className="card">
+            <p className="text-sm text-muted">Angemeldet als</p>
+            <p className="mt-0.5 font-medium text-ink break-all">{benutzer.email}</p>
+            <span className="mt-2 inline-block rounded-full border border-surface-border bg-white px-2.5 py-0.5 text-xs font-medium text-brand-strong">
+              {benutzer.rolle}
             </span>
-            {benutzer.rolle === "admin" && (
-              <>
-                <Link href="/admin/mitglieder" className="underline">
-                  Mitglieder-Verwaltung
-                </Link>
-                <Link href="/admin/kurstermine" className="underline">
-                  Kurstermin-Verwaltung
-                </Link>
-                <Link href="/admin/nachweis" className="underline">
-                  Buchungsnachweis
-                </Link>
-                <Link href="/admin/no-show" className="underline">
-                  No-Show-Auswertung
-                </Link>
-                <Link href="/admin/kurstypen" className="underline">
-                  Kurspreise
-                </Link>
-              </>
-            )}
-            {benutzer.rolle === "trainer" && (
-              <Link href="/trainer" className="underline">
-                Mein Kursplan
-              </Link>
-            )}
-            {benutzer.rolle === "mitglied" && (
-              <>
-                <Link href="/kurse" className="underline">
-                  Kurse buchen
-                </Link>
-                <Link href="/mein-bereich" className="underline">
-                  Mein Bereich
-                </Link>
-                <Link href="/videos" className="underline">
-                  Videos
-                </Link>
-              </>
-            )}
-            <form action={logout}>
-              <button type="submit" className="underline">
-                Abmelden
-              </button>
-            </form>
           </div>
-        ) : (
-          <Link
-            href="/login"
-            className="rounded bg-black px-4 py-2 text-sm text-white"
-          >
+
+          <nav className="flex flex-col gap-2">
+            {links.map((l) => (
+              <Link key={l.href} href={l.href} className="navlink">
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+
+          <form action={logout}>
+            <button type="submit" className="btn btn-outline btn-block">
+              Abmelden
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="mt-6">
+          <Link href="/login" className="btn btn-primary btn-block">
             Anmelden
           </Link>
-        )}
-      </div>
+        </div>
+      )}
 
-      <p className="mt-10 text-sm text-gray-500">
+      <p className="mt-8 text-xs text-muted">
         Aktueller Stand: Kursbuchung/Warteliste/Storno (FZ-001–003), Auth +
         Mitgliederstammdaten (FZ-006) und Trainer-Anwesenheit (FZ-004/005). Details in{" "}
         <code>docs/backlog.md</code>.
