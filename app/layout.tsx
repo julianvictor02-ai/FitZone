@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { getBenutzer } from "@/lib/auth/benutzer";
+import { seitenReihenfolge } from "@/lib/navigation";
+import { SeitenNavigation } from "./SeitenNavigation";
 
 export const metadata: Metadata = {
   title: "FitZone",
@@ -23,12 +26,18 @@ export const viewport: Viewport = {
   themeColor: "#22c55e",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const benutzer = await getBenutzer();
+  const seiten = seitenReihenfolge(benutzer?.rolle ?? null);
+
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body>
+        {children}
+        <SeitenNavigation seiten={seiten} />
+      </body>
     </html>
   );
 }
