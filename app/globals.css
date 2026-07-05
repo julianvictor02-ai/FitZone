@@ -29,6 +29,11 @@
   --space-8: 32px;
 }
 
+html {
+  /* Horizontale Edge-Swipe-/Overscroll-Navigation des Browsers unterbinden */
+  overscroll-behavior-x: none;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-ink);
@@ -36,6 +41,9 @@ body {
   font-size: 16px; /* lesbare Basis, verhindert iOS-Zoom bei Inputs */
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
+  overscroll-behavior-x: none;
+  /* Nur vertikales Scrollen + Pinch-Zoom zulassen → kein horizontales Wisch-Blättern */
+  touch-action: pan-y pinch-zoom;
 }
 
 /* Sichtbarer Fokus für Tastatur-/Screenreader-Nutzung */
@@ -51,7 +59,9 @@ body {
   width: 100%;
   max-width: 480px;
   margin-inline: auto;
-  padding: var(--space-4) var(--space-4) var(--space-8);
+  /* unten Platz für die fixierten Vor/Zurück-Buttons (inkl. Safe-Area) */
+  padding: var(--space-4) var(--space-4)
+    calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Karte / Fläche */
@@ -128,6 +138,43 @@ textarea.input {
   min-height: 72px;
   padding: var(--space-2) var(--space-3);
   resize: vertical;
+}
+
+/* Vor/Zurück-Buttons – fix unten links/rechts, minimalistisch (nur Chevron).
+   Grün = derselbe Token wie alle gefüllten Buttons (--color-brand-strong). */
+.nav-fab {
+  position: fixed;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px; /* Touch-Target ≥ 44px */
+  height: 48px;
+  border-radius: 9999px;
+  border: none;
+  background: var(--color-brand-strong);
+  color: #ffffff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+  transition: background-color 0.15s ease;
+}
+.nav-fab-left {
+  left: var(--space-4);
+}
+.nav-fab-right {
+  right: var(--space-4);
+}
+.nav-fab:not(:disabled):hover {
+  background: var(--color-brand-strong-hover);
+}
+.nav-fab:disabled {
+  background: #e5e7eb; /* sichtbar ausgegraut */
+  color: #9ca3af;
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 /* Gestapelter Navigations-Eintrag (mobiltauglich, 44px Touch-Target) */
