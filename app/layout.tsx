@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { getBenutzer } from "@/lib/auth/benutzer";
-import { seitenReihenfolge } from "@/lib/navigation";
 import { SeitenNavigation } from "./SeitenNavigation";
 
 export const metadata: Metadata = {
@@ -30,13 +29,13 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const benutzer = await getBenutzer();
-  const seiten = seitenReihenfolge(benutzer?.rolle ?? null);
 
   return (
     <html lang="de">
       <body>
         {children}
-        <SeitenNavigation seiten={seiten} />
+        {/* Untere Navigation nur für angemeldete Nutzer (nicht auf dem Login-Screen). */}
+        {benutzer && <SeitenNavigation />}
       </body>
     </html>
   );
