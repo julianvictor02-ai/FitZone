@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { PushAboEingang } from "@/lib/push/abo";
+import { Bell } from "@/components/icons";
 
 // FZ-019/FZ-022 — „Benachrichtigungen aktivieren" (Web-Push). Registriert den Service
 // Worker, fragt die Berechtigung ab, abonniert und meldet das Abo an den Server. Die
@@ -114,12 +115,12 @@ export function PushEinstellung({
         </div>
         {status === "aus" && (
           <button onClick={aktiviere} disabled={busy} className="btn btn-primary">
-            {busy ? "…" : "Aktivieren"}
+            {busy ? <span className="spinner" /> : <><Bell /> Aktivieren</>}
           </button>
         )}
         {status === "an" && (
           <button onClick={deaktiviere} disabled={busy} className="btn btn-outline">
-            {busy ? "…" : "Deaktivieren"}
+            {busy ? <span className="spinner spinner-ink" /> : "Deaktivieren"}
           </button>
         )}
       </div>

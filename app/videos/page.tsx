@@ -4,6 +4,7 @@ import { requireRolle } from "@/lib/auth/benutzer";
 import { db } from "@/lib/db";
 import { kurstyp, mitglied, onDemandVideo, tarif } from "@/lib/db/schema";
 import { erlaubteVideoTarife, type TarifName } from "@/lib/content/zugriff";
+import { Play, Video } from "@/components/icons";
 
 // FZ-011 — On-Demand-Videos, tarif-gefiltert (BR7). Die Query liefert nur Videos, deren
 // mindest_tarif der Tarif des Mitglieds erreicht — Basic sieht keine (unerlaubter
@@ -65,15 +66,23 @@ export default async function VideosPage() {
           erhältst du Zugriff.
         </p>
       ) : videos.length === 0 ? (
-        <p className="empty">Zurzeit keine Videos verfügbar.</p>
+        <p className="empty">
+          <span className="empty-icon">
+            <Video />
+          </span>
+          <span>Zurzeit keine Videos verfügbar.</span>
+        </p>
       ) : (
         <ul className="stack">
           {videos.map((v) => (
             <li key={v.videoId} className="card">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-medium text-ink">{v.titel}</div>
-                  <div className="mt-0.5 text-sm text-muted">
+              <div className="flex items-start gap-3">
+                <div className="icon-tile">
+                  <Play />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-ink leading-tight">{v.titel}</div>
+                  <div className="mt-1 text-sm text-muted">
                     {[v.kurstyp, v.level, v.dauer ? `${v.dauer} Min` : null, v.mindestTarif ? `ab ${v.mindestTarif}` : null]
                       .filter(Boolean)
                       .join(" · ")}
@@ -88,7 +97,7 @@ export default async function VideosPage() {
                   rel="noopener noreferrer"
                   className="btn btn-primary btn-block mt-3"
                 >
-                  Ansehen{v.plattform ? ` (${v.plattform})` : ""}
+                  <Play /> Ansehen{v.plattform ? ` (${v.plattform})` : ""}
                 </a>
               )}
             </li>

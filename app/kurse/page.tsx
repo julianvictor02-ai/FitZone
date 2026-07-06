@@ -15,6 +15,7 @@ import { MAX_WARTELISTE } from "@/lib/booking/warteliste";
 import { stornoGebuehrFaellig } from "@/lib/booking/storno";
 import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 import { KursterminAktion, type Zustand } from "./KursterminAktion";
+import { kursIcon, Users, XCircle, Compass } from "@/components/icons";
 
 const DATUM = new Intl.DateTimeFormat("de-DE", {
   weekday: "short",
@@ -141,7 +142,7 @@ export default async function KursePage({
         </p>
       </header>
 
-      <nav className="mb-4 flex gap-2 text-sm">
+      <nav className="mb-5 flex gap-2">
         {[
           { label: "Alle", wert: null },
           { label: "Studio", wert: "Studio" },
@@ -150,10 +151,8 @@ export default async function KursePage({
           <Link
             key={f.label}
             href={filterLink(f.wert)}
-            className={`inline-flex min-h-11 items-center rounded-btn border px-3 font-medium ${
-              modusFilter === f.wert || (!modusFilter && f.wert === null)
-                ? "border-brand-strong bg-brand-strong text-white"
-                : "border-gray-300 text-ink"
+            className={`chip ${
+              modusFilter === f.wert || (!modusFilter && f.wert === null) ? "chip-active" : ""
             }`}
           >
             {f.label}
@@ -196,12 +195,16 @@ export default async function KursePage({
             zustand = "livestream_gesperrt";
           }
 
+          const KursIcon = kursIcon(t.kurstyp);
           return (
             <li key={t.kursterminId} className="card">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-ink">{t.kurstyp}</h3>
-                  <p className="mt-0.5 text-sm text-muted">
+              <div className="flex items-start gap-3">
+                <div className="icon-tile">
+                  <KursIcon />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-ink leading-tight">{t.kurstyp}</h3>
+                  <p className="mt-1 text-sm text-muted">
                     {DATUM.format(t.start)} Uhr
                     {t.dauerMinuten != null && ` · ${t.dauerMinuten} Min`}
                   </p>
@@ -211,9 +214,13 @@ export default async function KursePage({
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   {frei > 0 ? (
-                    <span className="badge badge-frei">{frei} frei</span>
+                    <span className="badge badge-frei">
+                      <Users /> {frei} frei
+                    </span>
                   ) : (
-                    <span className="badge badge-warn">Ausgebucht</span>
+                    <span className="badge badge-warn">
+                      <XCircle /> Ausgebucht
+                    </span>
                   )}
                   {frei === 0 && wl.length > 0 && (
                     <span className="text-xs text-muted">
@@ -241,7 +248,13 @@ export default async function KursePage({
         })}
         {termine.length === 0 && (
           <li className="empty">
-            Keine buchbaren Kurstermine{modusFilter ? ` (${modusFilter})` : ""}.
+            <span className="empty-icon">
+              <Compass />
+            </span>
+            <span>
+              Aktuell keine buchbaren Kurstermine{modusFilter ? ` (${modusFilter})` : ""}. Schau
+              später wieder vorbei.
+            </span>
           </li>
         )}
       </ul>

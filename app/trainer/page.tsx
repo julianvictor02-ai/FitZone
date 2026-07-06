@@ -14,6 +14,7 @@ import {
 import { KursVorschlagFormular } from "./KursVorschlagFormular";
 import { VorschlagBearbeiten } from "./VorschlagBearbeiten";
 import { PushEinstellung } from "@/components/PushEinstellung";
+import { Clock, Hourglass } from "@/components/icons";
 import type { AnwesenheitWert } from "@/lib/attendance/anwesenheit";
 
 // FZ-005 — Trainer-Login: eigener Kursplan + Anwesenheit abhaken.
@@ -134,10 +135,14 @@ export default async function TrainerPage() {
                   {t.kurstyp}{" "}
                   <span className="text-sm font-normal text-muted">· {t.modus}</span>
                   {t.status === "verschoben" && (
-                    <span className="badge badge-warn ml-2">Verschoben</span>
+                    <span className="badge badge-warn ml-2">
+                      <Clock /> Verschoben
+                    </span>
                   )}
                   {t.status === "vorgeschlagen" && (
-                    <span className="badge badge-success ml-2">Wartet auf Freigabe</span>
+                    <span className="badge badge-success ml-2">
+                      <Hourglass /> Wartet auf Freigabe
+                    </span>
                   )}
                 </div>
                 <div className="text-sm text-muted">

@@ -1,4 +1,5 @@
 import { login } from "./actions";
+import { LogIn } from "@/components/icons";
 
 export default async function LoginPage({
   searchParams,
@@ -34,7 +35,7 @@ export default async function LoginPage({
           />
         </label>
         <button type="submit" className="btn btn-primary btn-block mt-1">
-          Anmelden
+          <LogIn /> Anmelden
         </button>
       </form>
     </main>

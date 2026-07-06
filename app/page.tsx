@@ -1,21 +1,35 @@
 import Link from "next/link";
+import type { ComponentType, SVGProps } from "react";
 import { getBenutzer } from "@/lib/auth/benutzer";
 import { logout } from "./login/actions";
+import {
+  Users,
+  Calendar,
+  ClipboardList,
+  CheckCircle,
+  CreditCard,
+  Dumbbell,
+  User,
+  Video,
+  LogIn,
+} from "@/components/icons";
+
+type NavItem = { href: string; label: string; icon: ComponentType<SVGProps<SVGSVGElement>> };
 
 // Navigations-Ziele je Rolle (Labels/Hrefs unverändert gegenüber vorher).
-const NAV: Record<string, { href: string; label: string }[]> = {
+const NAV: Record<string, NavItem[]> = {
   admin: [
-    { href: "/admin/mitglieder", label: "Mitglieder-Verwaltung" },
-    { href: "/admin/kurstermine", label: "Kurstermin-Verwaltung" },
-    { href: "/admin/nachweis", label: "Buchungsnachweis" },
-    { href: "/admin/no-show", label: "No-Show-Auswertung" },
-    { href: "/admin/kurstypen", label: "Kurspreise" },
+    { href: "/admin/mitglieder", label: "Mitglieder-Verwaltung", icon: Users },
+    { href: "/admin/kurstermine", label: "Kurstermin-Verwaltung", icon: Calendar },
+    { href: "/admin/nachweis", label: "Buchungsnachweis", icon: ClipboardList },
+    { href: "/admin/no-show", label: "No-Show-Auswertung", icon: CheckCircle },
+    { href: "/admin/kurstypen", label: "Kurspreise", icon: CreditCard },
   ],
-  trainer: [{ href: "/trainer", label: "Mein Kursplan" }],
+  trainer: [{ href: "/trainer", label: "Mein Kursplan", icon: Calendar }],
   mitglied: [
-    { href: "/kurse", label: "Kurse buchen" },
-    { href: "/mein-bereich", label: "Mein Bereich" },
-    { href: "/videos", label: "Videos" },
+    { href: "/kurse", label: "Kurse buchen", icon: Dumbbell },
+    { href: "/mein-bereich", label: "Mein Bereich", icon: User },
+    { href: "/videos", label: "Videos", icon: Video },
   ],
 };
 
@@ -41,11 +55,17 @@ export default async function Home() {
           </div>
 
           <nav className="stack">
-            {links.map((l) => (
-              <Link key={l.href} href={l.href} className="navlink">
-                {l.label}
-              </Link>
-            ))}
+            {links.map((l) => {
+              const Icon = l.icon;
+              return (
+                <Link key={l.href} href={l.href} className="navlink">
+                  <span className="icon-tile" style={{ width: 36, height: 36 }}>
+                    <Icon />
+                  </span>
+                  <span className="navlink-label">{l.label}</span>
+                </Link>
+              );
+            })}
           </nav>
 
           <form action={logout}>
@@ -56,7 +76,7 @@ export default async function Home() {
         </div>
       ) : (
         <Link href="/login" className="btn btn-primary btn-block">
-          Anmelden
+          <LogIn /> Anmelden
         </Link>
       )}
     </main>

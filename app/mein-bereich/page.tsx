@@ -12,6 +12,17 @@ import {
   tarif,
   wartelisteneintrag,
 } from "@/lib/db/schema";
+import {
+  kursIcon,
+  Hourglass,
+  CheckCircle,
+  XCircle,
+  Ban,
+  Clock,
+  CalendarX,
+  Compass,
+  User,
+} from "@/components/icons";
 
 // FZ-007 — Mitglieder-Selbstansicht (read-only). Zeigt Stammdaten, eigene Buchungen/
 // Historie und aktiven Wartelisten-Status. Strikt nur eigene Daten (§2b): jede Query
@@ -139,8 +150,13 @@ export default async function MeinBereichPage() {
 
       {/* Stammdaten */}
       <section className="card">
-        <h2 className="text-lg font-semibold text-ink">{stamm?.name}</h2>
-        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+        <div className="flex items-center gap-3">
+          <div className="icon-tile" style={{ width: 48, height: 48 }}>
+            <User />
+          </div>
+          <h2 className="text-xl font-bold text-ink leading-tight">{stamm?.name}</h2>
+        </div>
+        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-muted">Tarif</dt>
             <dd className="mt-0.5">
@@ -151,6 +167,7 @@ export default async function MeinBereichPage() {
             <dt className="text-muted">Status</dt>
             <dd className="mt-0.5">
               <span className={`badge ${stamm?.status === "aktiv" ? "badge-success" : "badge-muted"}`}>
+                {stamm?.status === "aktiv" ? <CheckCircle /> : <Ban />}
                 {stamm?.status}
               </span>
             </dd>
@@ -175,35 +192,51 @@ export default async function MeinBereichPage() {
       <section className="section">
         <h2 className="section-title">Warteliste</h2>
         {meineWl.length === 0 ? (
-          <p className="empty">Du stehst auf keiner Warteliste.</p>
+          <p className="empty">
+            <span className="empty-icon">
+              <Hourglass />
+            </span>
+            <span>Du stehst auf keiner Warteliste.</span>
+          </p>
         ) : (
           <ul className="stack">
-            {meineWl.map((w) => (
-              <li key={w.kursterminId} className="card">
-                <div className="font-medium text-ink">{w.kurstyp}</div>
-                <div className="mt-0.5 text-sm text-muted">
-                  {w.modus} · {DATUM.format(w.start)} Uhr
-                </div>
-                <div className="mt-2">
-                  <span
-                    className={`badge ${
-                      w.status === "benachrichtigt" ? "badge-success" : "badge-warn"
-                    }`}
-                  >
-                    {w.status === "wartend"
-                      ? `Warteliste · Platz ${position(w.kursterminId)}`
-                      : "Platz frei"}
-                  </span>
-                </div>
-                {w.status === "benachrichtigt" && w.fristBis && (
-                  <p className="hinweis hinweis-ok mt-2">
-                    Bitte bis{" "}
-                    {w.fristBis.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}{" "}
-                    unter &bdquo;Kurse&ldquo; bestätigen.
-                  </p>
-                )}
-              </li>
-            ))}
+            {meineWl.map((w) => {
+              const KI = kursIcon(w.kurstyp);
+              return (
+                <li key={w.kursterminId} className="card">
+                  <div className="flex items-start gap-3">
+                    <div className="icon-tile">
+                      <KI />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-ink leading-tight">{w.kurstyp}</div>
+                      <div className="mt-1 text-sm text-muted">
+                        {w.modus} · {DATUM.format(w.start)} Uhr
+                      </div>
+                      <div className="mt-2">
+                        <span
+                          className={`badge ${
+                            w.status === "benachrichtigt" ? "badge-success" : "badge-warn"
+                          }`}
+                        >
+                          {w.status === "benachrichtigt" ? <CheckCircle /> : <Hourglass />}
+                          {w.status === "wartend"
+                            ? `Warteliste · Platz ${position(w.kursterminId)}`
+                            : "Platz frei"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {w.status === "benachrichtigt" && w.fristBis && (
+                    <p className="hinweis hinweis-ok mt-3">
+                      <CheckCircle /> Bitte bis{" "}
+                      {w.fristBis.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}{" "}
+                      unter &bdquo;Kurse&ldquo; bestätigen.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -212,30 +245,51 @@ export default async function MeinBereichPage() {
       <section className="section">
         <h2 className="section-title">Meine Buchungen</h2>
         {buchungen.length === 0 ? (
-          <p className="empty">Noch keine Buchungen.</p>
+          <div className="empty">
+            <span className="empty-icon">
+              <CalendarX />
+            </span>
+            <span>Noch keine Buchungen.</span>
+            <Link href="/kurse" className="btn btn-primary">
+              <Compass /> Kurs finden
+            </Link>
+          </div>
         ) : (
           <ul className="stack">
             {buchungen.map((b, i) => {
               const storniert = b.status === "storniert";
+              const KI = kursIcon(b.kurstyp);
               return (
                 <li key={i} className="card">
-                  <div className="font-medium text-ink">{b.kurstyp}</div>
-                  <div className="mt-0.5 text-sm text-muted">
-                    {b.modus} · {DATUM.format(b.start)} Uhr
+                  <div className="flex items-start gap-3">
+                    <div className="icon-tile">
+                      <KI />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-ink leading-tight">{b.kurstyp}</div>
+                      <div className="mt-1 text-sm text-muted">
+                        {b.modus} · {DATUM.format(b.start)} Uhr
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {/* Kursausfall/-verschiebung (FZ-009/BR8) — für nicht stornierte Buchungen. */}
+                        {!storniert && b.terminStatus === "abgesagt" && (
+                          <span className="badge badge-danger">
+                            <Ban /> Kurs abgesagt
+                          </span>
+                        )}
+                        {!storniert && b.terminStatus === "verschoben" && (
+                          <span className="badge badge-warn">
+                            <Clock /> Kurs verschoben
+                          </span>
+                        )}
+                        <span className={`badge ${storniert ? "badge-muted" : "badge-success"}`}>
+                          {storniert ? <XCircle /> : <CheckCircle />}
+                          {storniert ? "Storniert" : "Bestätigt"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {/* Kursausfall/-verschiebung (FZ-009/BR8) — für nicht stornierte Buchungen. */}
-                    {!storniert && b.terminStatus === "abgesagt" && (
-                      <span className="badge badge-danger">Kurs abgesagt</span>
-                    )}
-                    {!storniert && b.terminStatus === "verschoben" && (
-                      <span className="badge badge-warn">Kurs verschoben</span>
-                    )}
-                    <span className={`badge ${storniert ? "badge-muted" : "badge-success"}`}>
-                      {storniert ? "Storniert" : "Bestätigt"}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs text-muted">
+                  <div className="mt-3 text-xs text-muted">
                     Gebucht am {DATUM_ZEIT.format(b.zeitpunkt)} Uhr
                     {b.anwesenheit !== "offen" &&
                       ` · ${ANWESENHEIT_LABEL[b.anwesenheit] ?? b.anwesenheit}`}
