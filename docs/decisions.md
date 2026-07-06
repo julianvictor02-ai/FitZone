@@ -5,6 +5,54 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-06 — FZ-020: Kurstermin-Erstellung — Trainer schlägt vor, Admin gibt frei
+
+**Kontext:** Bislang konnte der Admin Kurstermine nur absagen/verschieben (FZ-009); es gab
+**kein** „Kurs anlegen" in der App — alle Termine stammten aus `scripts/seed.ts`. Erste
+Idee war ein reines Admin-Anlege-Formular; Kundenwunsch (Julian) korrigierte auf: **Trainer
+legt den Kurs an, Admin muss ihn nur freigeben** — so liegt die Erfassungsarbeit nicht beim
+Admin.
+
+### Entscheidung
+- **Neuer Status `vorgeschlagen`** im Enum `kurstermin_status` (Migration `drizzle/0005`,
+  per `ALTER TYPE … ADD VALUE` — direkt angewandt, da das Migrations-Journal der DB nicht
+  in Sync ist; die DB wurde per `db:push` aufgebaut, `db:migrate` würde bei 0 beginnen).
+- **Trainer-Erfassung** (`lib/kurstermin/vorschlag.ts` → `schlageKursterminVor`): Formular in
+  `app/trainer` (Action `schlageKursVor`). `trainer_id` kommt **aus der Session**, nicht aus
+  dem Formular — ein Trainer legt nur für sich selbst an (§2b). Validierung: Kurstyp/Trainer
+  gesetzt, Modus ∈ {Studio, Livestream}, Start in Zukunft, Kapazität > 0, Stream-Link bei
+  Livestream verpflichtend (bei Studio verworfen). Neuer Termin = Status `vorgeschlagen`.
+- **Admin-Freigabe** (`gibKursterminFrei`: `vorgeschlagen → geplant`, atomar mit `FOR UPDATE`)
+  bzw. **Ablehnen** (`lehneVorschlagAb`: löscht den Vorschlag — nie `geplant` gewesen, also
+  keine Buchungen/Warteliste, Löschen ist sicher). UI-Sektion „Freigabe ausstehend" in
+  `app/admin/kurstermine`.
+- **Kein zusätzliches Gating nötig:** `/kurse` und `bucheKurstermin`/`warteAufKurstermin`
+  filtern bereits strikt auf `status = "geplant"`. Ein `vorgeschlagen`-Termin ist damit für
+  Mitglieder **automatisch unsichtbar und unbuchbar**, bis der Admin ihn freigibt. Im
+  Trainer-Kursplan (`status != abgesagt`) erscheint er als „wartet auf Freigabe".
+
+### Alternativen verworfen
+- **Admin legt selbst an** (erste Idee): verlagert alle Erfassungsarbeit auf den Admin —
+  widerspricht dem Kundenwunsch. Der Vorschlag-/Freigabe-Fluss verteilt die Last.
+- **Ablehnen = Status `abgesagt`** statt Löschen: ein nie freigegebener Vorschlag ist kein
+  „Ausfall"; Löschen hält die Termin-Liste sauber (kein Nachweis-Bedarf, da nie gebucht).
+- **Serien-/Wiederholungstermine** gleich mitbauen: nicht angefordert (Simplicity) — ein
+  Termin pro Vorschlag.
+- **Neue Kurstypen/Trainer im Formular anlegen:** nur Auswahl aus Bestand (FK sichert
+  Existenz); Stammdaten bleiben Admin-Sache.
+
+### Konsequenzen
+- Positiv: Kurse können erstmals **in der App** entstehen; Arbeitsteilung Trainer→Admin;
+  verifiziert (`verify:fz020`, 19/19: Vorschlag, Unsichtbarkeit/Unbuchbarkeit vor Freigabe,
+  Trainer-Kursplan, Freigabe→buchbar, Doppel-Freigabe, Livestream-Link-Pflicht,
+  Validierung, Ablehnen/Löschen); keine Regression (fz001/fz009 grün); `tsc` grün.
+- Offen/Betrieb: Migration 0005 muss auf jeder Umgebung angewandt werden (auf der
+  Live-DB bereits geschehen). Sichtbarkeit weiterhin app-seitig (kein RLS, projektweit).
+  Ein freigegebener Termin durchläuft danach den normalen FZ-009-Lebenszyklus
+  (verschieben/absagen).
+
+---
+
 ## 2026-07-04 — PWA + Deployment (Vercel) für „aufs iPhone"
 
 **Kontext:** FitZone soll aufs iPhone. Es ist eine Web-App (kein App Store); der Weg ist

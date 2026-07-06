@@ -8,6 +8,7 @@ import {
   type AnwesenheitErgebnis,
 } from "@/lib/attendance/anwesenheit";
 import { setzeTrainerNotiz, type NotizErgebnis } from "@/lib/trainer/notiz";
+import { schlageKursterminVor } from "@/lib/kurstermin/vorschlag";
 
 type KeinTrainer = { status: "nicht_angemeldet" } | { status: "kein_trainer" };
 
@@ -45,4 +46,27 @@ export async function setzeTrainerNotizAction(
   const ergebnis = await setzeTrainerNotiz(b.trainerId, kursterminId, mitgliedId, notiz);
   if (ergebnis.status === "gespeichert") revalidatePath("/trainer");
   return ergebnis;
+}
+
+// FZ-020 — Trainer schlägt einen Kurstermin vor (Status `vorgeschlagen`). trainer_id kommt
+// aus der Session (nur für sich selbst, §2b); der Admin gibt den Vorschlag anschließend frei.
+export async function schlageKursVor(formData: FormData) {
+  const b = await getBenutzer();
+  if (!b || b.rolle !== "trainer" || !b.trainerId) return;
+
+  const kurstypId = String(formData.get("kurstypId") ?? "");
+  const modus = String(formData.get("modus") ?? "") as "Studio" | "Livestream";
+  const startRaw = String(formData.get("start") ?? "").trim();
+  const kapazitaetRaw = String(formData.get("kapazitaet") ?? "").trim();
+  const streamLink = String(formData.get("streamLink") ?? "").trim();
+
+  await schlageKursterminVor({
+    trainerId: b.trainerId,
+    kurstypId,
+    modus,
+    start: startRaw ? new Date(startRaw) : new Date(NaN),
+    kapazitaet: Number.parseInt(kapazitaetRaw, 10),
+    streamLink,
+  });
+  revalidatePath("/trainer");
 }

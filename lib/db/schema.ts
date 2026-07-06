@@ -31,6 +31,7 @@ export const kursterminStatus = pgEnum("kurstermin_status", [
   "geplant",
   "abgesagt",
   "verschoben",
+  "vorgeschlagen", // FZ-020: Trainer-Vorschlag, wartet auf Admin-Freigabe (dann → geplant)
 ]);
 export const buchungsstatus = pgEnum("buchungsstatus", ["bestaetigt", "storniert"]);
 export const anwesenheit = pgEnum("anwesenheit", [

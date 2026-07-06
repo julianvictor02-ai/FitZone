@@ -1,0 +1,1 @@
+ALTER TYPE "public"."kurstermin_status" ADD VALUE 'vorgeschlagen';

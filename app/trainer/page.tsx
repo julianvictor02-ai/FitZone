@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { buchung, kurstermin, kurstyp, mitglied } from "@/lib/db/schema";
 import { AnwesenheitAktion } from "./AnwesenheitAktion";
 import { TrainerNotiz } from "./TrainerNotiz";
+import { schlageKursVor } from "./actions";
 import type { AnwesenheitWert } from "@/lib/attendance/anwesenheit";
 
 // FZ-005 — Trainer-Login: eigener Kursplan + Anwesenheit abhaken.
@@ -22,6 +23,7 @@ const DATUM = new Intl.DateTimeFormat("de-DE", {
 const STATUS_BADGE: Record<string, string> = {
   verschoben: "text-amber-700",
   geplant: "text-gray-500",
+  vorgeschlagen: "text-emerald-700",
 };
 
 export default async function TrainerPage() {
@@ -38,6 +40,12 @@ export default async function TrainerPage() {
   }
   const trainerId = me.trainerId;
   const jetzt = new Date();
+
+  // Kursarten für das Vorschlags-Formular (FZ-020).
+  const kurstypen = await db
+    .select({ id: kurstyp.kurstypId, name: kurstyp.name })
+    .from(kurstyp)
+    .orderBy(asc(kurstyp.name));
 
   // Nur eigene, nicht abgesagte Termine (§2b). Jüngste zuerst — frisch beendete
   // Kurse (Anwesenheit fällig) stehen oben.
@@ -91,6 +99,50 @@ export default async function TrainerPage() {
         Nur deine Kurse. Anwesenheit lässt sich ab Kursbeginn abhaken (FZ-005).
       </p>
 
+      {/* FZ-020 — Kurs vorschlagen; erscheint erst nach Admin-Freigabe für Mitglieder. */}
+      <form
+        action={schlageKursVor}
+        className="mt-6 flex flex-col gap-3 rounded-card border border-gray-200 p-4"
+      >
+        <h2 className="font-medium text-ink">Kurs vorschlagen</h2>
+        <p className="text-xs text-muted">
+          Nach dem Vorschlagen gibt der Admin den Kurs frei — erst dann ist er für
+          Mitglieder buchbar.
+        </p>
+        <label className="flex flex-col gap-1 text-sm text-muted">
+          Kursart
+          <select name="kurstypId" required className="input">
+            {kurstypen.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-muted">
+          Modus
+          <select name="modus" required defaultValue="Studio" className="input">
+            <option value="Studio">Studio</option>
+            <option value="Livestream">Livestream</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-muted">
+          Start
+          <input type="datetime-local" name="start" required className="input" />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-muted">
+          Kapazität
+          <input type="number" name="kapazitaet" min={1} required className="input" />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-muted">
+          Stream-Link (nur Livestream)
+          <input type="url" name="streamLink" placeholder="https://…" className="input" />
+        </label>
+        <button type="submit" className="btn btn-primary btn-block">
+          Kurs vorschlagen
+        </button>
+      </form>
+
       <ul className="mt-6 space-y-6">
         {termine.map((t) => {
           const liste = byTermin.get(t.kursterminId) ?? [];
@@ -103,6 +155,9 @@ export default async function TrainerPage() {
                   <span className="text-sm font-normal text-gray-500">· {t.modus}</span>
                   {t.status === "verschoben" && (
                     <span className="ml-2 text-xs text-amber-700">(verschoben)</span>
+                  )}
+                  {t.status === "vorgeschlagen" && (
+                    <span className="ml-2 text-xs text-emerald-700">(wartet auf Freigabe)</span>
                   )}
                 </div>
                 <div className={`text-sm ${STATUS_BADGE[t.status] ?? "text-gray-500"}`}>
