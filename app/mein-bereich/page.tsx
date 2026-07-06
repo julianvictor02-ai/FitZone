@@ -46,10 +46,6 @@ const ANWESENHEIT_LABEL: Record<string, string> = {
   no_show: "No-Show",
   entschuldigt: "Entschuldigt",
 };
-const WL_LABEL: Record<string, string> = {
-  wartend: "Wartend",
-  benachrichtigt: "Platz frei — bitte bestätigen",
-};
 
 export default async function MeinBereichPage() {
   const me = await requireRolle("mitglied");
@@ -184,21 +180,19 @@ export default async function MeinBereichPage() {
           <ul className="stack">
             {meineWl.map((w) => (
               <li key={w.kursterminId} className="card">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-medium text-ink">{w.kurstyp}</div>
-                    <div className="mt-0.5 text-sm text-muted">
-                      {w.modus} · {DATUM.format(w.start)} Uhr
-                    </div>
-                  </div>
+                <div className="font-medium text-ink">{w.kurstyp}</div>
+                <div className="mt-0.5 text-sm text-muted">
+                  {w.modus} · {DATUM.format(w.start)} Uhr
+                </div>
+                <div className="mt-2">
                   <span
-                    className={`badge shrink-0 ${
+                    className={`badge ${
                       w.status === "benachrichtigt" ? "badge-success" : "badge-warn"
                     }`}
                   >
                     {w.status === "wartend"
-                      ? `Platz ${position(w.kursterminId)}`
-                      : WL_LABEL[w.status] ?? w.status}
+                      ? `Warteliste · Platz ${position(w.kursterminId)}`
+                      : "Platz frei"}
                   </span>
                 </div>
                 {w.status === "benachrichtigt" && w.fristBis && (
@@ -225,25 +219,21 @@ export default async function MeinBereichPage() {
               const storniert = b.status === "storniert";
               return (
                 <li key={i} className="card">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-medium text-ink">{b.kurstyp}</div>
-                      <div className="mt-0.5 text-sm text-muted">
-                        {b.modus} · {DATUM.format(b.start)} Uhr
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
-                      {/* Kursausfall/-verschiebung (FZ-009/BR8) — für nicht stornierte Buchungen. */}
-                      {!storniert && b.terminStatus === "abgesagt" && (
-                        <span className="badge badge-danger">Kurs abgesagt</span>
-                      )}
-                      {!storniert && b.terminStatus === "verschoben" && (
-                        <span className="badge badge-warn">Kurs verschoben</span>
-                      )}
-                      <span className={`badge ${storniert ? "badge-muted" : "badge-success"}`}>
-                        {storniert ? "Storniert" : "Bestätigt"}
-                      </span>
-                    </div>
+                  <div className="font-medium text-ink">{b.kurstyp}</div>
+                  <div className="mt-0.5 text-sm text-muted">
+                    {b.modus} · {DATUM.format(b.start)} Uhr
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {/* Kursausfall/-verschiebung (FZ-009/BR8) — für nicht stornierte Buchungen. */}
+                    {!storniert && b.terminStatus === "abgesagt" && (
+                      <span className="badge badge-danger">Kurs abgesagt</span>
+                    )}
+                    {!storniert && b.terminStatus === "verschoben" && (
+                      <span className="badge badge-warn">Kurs verschoben</span>
+                    )}
+                    <span className={`badge ${storniert ? "badge-muted" : "badge-success"}`}>
+                      {storniert ? "Storniert" : "Bestätigt"}
+                    </span>
                   </div>
                   <div className="mt-2 text-xs text-muted">
                     Gebucht am {DATUM_ZEIT.format(b.zeitpunkt)} Uhr
