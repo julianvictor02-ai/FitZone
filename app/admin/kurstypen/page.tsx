@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { kurstyp } from "@/lib/db/schema";
 import { requireRolle } from "@/lib/auth/benutzer";
 import { STORNO_GEBUEHR_ANTEIL } from "@/lib/booking/storno";
-import { setzeEinzelpreis } from "./actions";
+import { setzeEinzelpreis, setzeStandardKapazitaet } from "./actions";
 
 // FZ-016 — Einzelkurs-Preise je Kursart (Basis der Stornogebühr = 50 %).
 
@@ -17,6 +17,8 @@ export default async function KurstypenPage() {
       kurstypId: kurstyp.kurstypId,
       name: kurstyp.name,
       einzelpreis: kurstyp.einzelpreis,
+      standardStudio: kurstyp.standardKapazitaetStudio,
+      standardLivestream: kurstyp.standardKapazitaetLivestream,
     })
     .from(kurstyp)
     .orderBy(asc(kurstyp.name));
@@ -56,6 +58,40 @@ export default async function KurstypenPage() {
                 </label>
                 <button type="submit" className="btn btn-outline btn-block">
                   Speichern
+                </button>
+              </form>
+
+              {/* FZ-021 — Standard-Kapazität je Modus (Vorbelegung im Trainer-Formular). */}
+              <form
+                action={setzeStandardKapazitaet}
+                className="mt-3 border-t border-gray-100 pt-3"
+              >
+                <input type="hidden" name="kurstypId" value={t.kurstypId} />
+                <div className="text-sm font-medium text-ink">Standard-Kapazität</div>
+                <div className="mt-2 flex gap-3">
+                  <label className="flex flex-1 flex-col gap-1 text-sm text-muted">
+                    Studio
+                    <input
+                      type="number"
+                      name="studio"
+                      min="1"
+                      defaultValue={t.standardStudio ?? ""}
+                      className="input"
+                    />
+                  </label>
+                  <label className="flex flex-1 flex-col gap-1 text-sm text-muted">
+                    Livestream
+                    <input
+                      type="number"
+                      name="livestream"
+                      min="1"
+                      defaultValue={t.standardLivestream ?? ""}
+                      className="input"
+                    />
+                  </label>
+                </div>
+                <button type="submit" className="btn btn-outline btn-block mt-2">
+                  Standard speichern
                 </button>
               </form>
             </li>

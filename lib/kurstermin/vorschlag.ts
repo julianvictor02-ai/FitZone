@@ -24,8 +24,8 @@ export type VorschlagErgebnis =
   | { status: "ungueltige_eingabe"; feld: string };
 
 export type FreigabeErgebnis =
-  | { status: "freigegeben" }
-  | { status: "abgelehnt" }
+  | { status: "freigegeben"; trainerId: string }
+  | { status: "abgelehnt"; trainerId: string }
   | { status: "nicht_gefunden" }
   | { status: "nicht_vorgeschlagen"; von: string };
 
@@ -72,7 +72,7 @@ export async function schlageKursterminVor(
 export async function gibKursterminFrei(kursterminId: string): Promise<FreigabeErgebnis> {
   return db.transaction(async (tx) => {
     const [t] = await tx
-      .select({ status: kurstermin.status })
+      .select({ status: kurstermin.status, trainerId: kurstermin.trainerId })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
@@ -83,7 +83,7 @@ export async function gibKursterminFrei(kursterminId: string): Promise<FreigabeE
       .update(kurstermin)
       .set({ status: "geplant" })
       .where(eq(kurstermin.kursterminId, kursterminId));
-    return { status: "freigegeben" };
+    return { status: "freigegeben", trainerId: t.trainerId };
   });
 }
 
@@ -92,7 +92,7 @@ export async function gibKursterminFrei(kursterminId: string): Promise<FreigabeE
 export async function lehneVorschlagAb(kursterminId: string): Promise<FreigabeErgebnis> {
   return db.transaction(async (tx) => {
     const [t] = await tx
-      .select({ status: kurstermin.status })
+      .select({ status: kurstermin.status, trainerId: kurstermin.trainerId })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
@@ -100,6 +100,6 @@ export async function lehneVorschlagAb(kursterminId: string): Promise<FreigabeEr
     if (t.status !== "vorgeschlagen") return { status: "nicht_vorgeschlagen", von: t.status };
 
     await tx.delete(kurstermin).where(eq(kurstermin.kursterminId, kursterminId));
-    return { status: "abgelehnt" };
+    return { status: "abgelehnt", trainerId: t.trainerId };
   });
 }

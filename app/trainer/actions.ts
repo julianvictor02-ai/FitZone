@@ -9,6 +9,11 @@ import {
 } from "@/lib/attendance/anwesenheit";
 import { setzeTrainerNotiz, type NotizErgebnis } from "@/lib/trainer/notiz";
 import { schlageKursterminVor } from "@/lib/kurstermin/vorschlag";
+import {
+  speicherePushAboTrainer,
+  entfernePushAboTrainer,
+  type PushAboEingang,
+} from "@/lib/push/abo";
 
 type KeinTrainer = { status: "nicht_angemeldet" } | { status: "kein_trainer" };
 
@@ -69,4 +74,22 @@ export async function schlageKursVor(formData: FormData) {
     streamLink,
   });
   revalidatePath("/trainer");
+}
+
+// FZ-022 — Push-Abo eines Trainers an-/abmelden. Trainer kommt aus der Session; gespeichert
+// wird nur für das eigene Konto (§2b).
+type PushErgebnis = { status: "ok" } | { status: "kein_trainer" };
+
+export async function aktivierePushTrainerAction(sub: PushAboEingang): Promise<PushErgebnis> {
+  const b = await getBenutzer();
+  if (!b || b.rolle !== "trainer" || !b.trainerId) return { status: "kein_trainer" };
+  await speicherePushAboTrainer(b.trainerId, sub);
+  return { status: "ok" };
+}
+
+export async function deaktivierePushTrainerAction(endpoint: string): Promise<PushErgebnis> {
+  const b = await getBenutzer();
+  if (!b || b.rolle !== "trainer" || !b.trainerId) return { status: "kein_trainer" };
+  await entfernePushAboTrainer(b.trainerId, endpoint);
+  return { status: "ok" };
 }

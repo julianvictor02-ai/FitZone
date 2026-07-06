@@ -181,9 +181,9 @@ export const wartelisteneintrag = pgTable(
 // Ein Mitglied kann mehrere Geräte/Browser haben (mehrere Zeilen).
 export const pushAbo = pgTable("push_abo", {
   aboId: uuid("abo_id").primaryKey().defaultRandom(),
-  mitgliedId: uuid("mitglied_id")
-    .notNull()
-    .references(() => mitglied.mitgliedId),
+  // Genau eins von mitgliedId/trainerId ist gesetzt (FZ-022: Push auch für Trainer).
+  mitgliedId: uuid("mitglied_id").references(() => mitglied.mitgliedId),
+  trainerId: uuid("trainer_id").references(() => trainer.trainerId),
   endpoint: text("endpoint").notNull().unique(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),

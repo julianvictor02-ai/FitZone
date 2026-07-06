@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { aktivierePushAction, deaktivierePushAction } from "./actions";
+import type { PushAboEingang } from "@/lib/push/abo";
 
-// FZ-019 — „Benachrichtigungen aktivieren" (Web-Push). Registriert den Service Worker,
-// fragt die Berechtigung ab, abonniert und meldet das Abo an den Server. Server-Versand
-// läuft über lib/notify.ts.
+// FZ-019/FZ-022 — „Benachrichtigungen aktivieren" (Web-Push). Registriert den Service
+// Worker, fragt die Berechtigung ab, abonniert und meldet das Abo an den Server. Die
+// konkreten Server-Actions (Mitglied bzw. Trainer) werden als Props injiziert, damit
+// dieselbe Browser-Logik für beide Rollen wiederverwendbar ist. Versand: lib/notify.ts.
 
 type Status = "laden" | "kein_key" | "nicht_unterstuetzt" | "blockiert" | "aus" | "an";
 
@@ -19,7 +20,15 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return arr;
 }
 
-export function PushEinstellung({ vapidKey }: { vapidKey: string | null }) {
+export function PushEinstellung({
+  vapidKey,
+  aktiviereAbo,
+  deaktiviereAbo,
+}: {
+  vapidKey: string | null;
+  aktiviereAbo: (sub: PushAboEingang) => Promise<unknown>;
+  deaktiviereAbo: (endpoint: string) => Promise<unknown>;
+}) {
   const [status, setStatus] = useState<Status>("laden");
   const [busy, setBusy] = useState(false);
 
@@ -58,7 +67,7 @@ export function PushEinstellung({ vapidKey }: { vapidKey: string | null }) {
       });
       const json = sub.toJSON();
       if (json.keys?.p256dh && json.keys?.auth) {
-        await aktivierePushAction({ endpoint: sub.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth });
+        await aktiviereAbo({ endpoint: sub.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth });
         setStatus("an");
       } else {
         setStatus("aus");
@@ -76,7 +85,7 @@ export function PushEinstellung({ vapidKey }: { vapidKey: string | null }) {
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = reg ? await reg.pushManager.getSubscription() : null;
       if (sub) {
-        await deaktivierePushAction(sub.endpoint);
+        await deaktiviereAbo(sub.endpoint);
         await sub.unsubscribe();
       }
       setStatus("aus");
@@ -92,7 +101,7 @@ export function PushEinstellung({ vapidKey }: { vapidKey: string | null }) {
     kein_key: "Push ist auf diesem Server noch nicht konfiguriert.",
     nicht_unterstuetzt: "Dein Browser unterstützt keine Push-Benachrichtigungen.",
     blockiert: "Benachrichtigungen sind im Browser blockiert — bitte in den Seiteneinstellungen erlauben.",
-    aus: "Erhalte Bestätigungen, Nachrück-Angebote und Kursausfälle direkt aufs Gerät.",
+    aus: "Erhalte wichtige Hinweise direkt aufs Gerät.",
     an: "Aktiv — du erhältst Push-Benachrichtigungen auf diesem Gerät.",
   };
 

@@ -5,6 +5,60 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-06 — FZ-021 + FZ-022: Standardkapazität-Vorbelegung + Trainer-Benachrichtigung
+
+**Kontext:** Zwei Anschluss-Verbesserungen an FZ-020. (1) Das `kurstyp`-Schema hatte die
+Spalten `standardKapazitaetStudio/Livestream` — bislang **ungenutzt** (offene Kundenfrage
+#5). (2) Der Trainer erfuhr die Freigabe/Ablehnung seines Vorschlags nur passiv (Badge im
+Kursplan); die Push-Infrastruktur (FZ-019) war **mitglied-gebunden**, Trainer haben kein
+`mitglied`.
+
+### Entscheidung — FZ-021 (Standardkapazität)
+- **Bestehende Spalten aktiviert** statt neuer Felder. Admin pflegt Studio-/Livestream-
+  Standard je Kursart in `app/admin/kurstypen` (`setzeStandardKapazitaet`; leer → null).
+- **Trainer-Formular wird Client-Komponente** (`app/trainer/KursVorschlagFormular.tsx`): bei
+  Wechsel von Kursart/Modus wird die Kapazität aus dem Standard **vorbelegt** (nur wenn einer
+  gepflegt ist), bleibt aber überschreibbar. Stream-Link erscheint nur bei Livestream. Die
+  Server-Action `schlageKursVor` wird als Prop übergeben (RSC → Client).
+
+### Entscheidung — FZ-022 (Trainer-Benachrichtigung)
+- **Push-Abo additiv erweitert** (Migration `0006`): `push_abo.trainer_id` (nullable),
+  `mitglied_id` **nullable** — ein Abo trägt entweder das eine oder das andere. Der
+  Mitglieds-Pfad bleibt **unverändert** (minimales Regressionsrisiko), statt push_abo auf
+  `benutzer_id` umzustellen (hätte Member-Flow + alle `benachrichtige`-Aufrufer berührt).
+- **Parallele Abo-Funktionen** (`*Trainer`) und `benachrichtigeTrainer` in `lib/notify.ts`;
+  die Sende-Schleife wurde in einen gemeinsamen Helper (`sendeAnAbos`) gezogen (DRY). Neue
+  Vorgänge `kurs_freigegeben`/`kurs_abgelehnt` (Deep-Link `/trainer`).
+- **Push-Toggle verallgemeinert:** die bisher member-spezifische `PushEinstellung` wandert
+  nach `components/PushEinstellung.tsx` und nimmt die Aktivieren/Deaktivieren-Actions als
+  **Props** — genutzt von Mitglied (Mein-Bereich) **und** Trainer. Zweiter echter Nutzer
+  rechtfertigt die Parametrisierung (keine gratuitöse Abstraktion).
+- **Versand nach Commit:** `gibKursterminFrei`/`lehneVorschlagAb` geben die `trainerId`
+  zurück; die Admin-Action benachrichtigt **nach** der Transaktion (kein Netz-I/O unter dem
+  Lock — konsistent mit FZ-009/FZ-019).
+
+### Alternativen verworfen
+- **Neue Kapazitäts-Felder** statt der vorhandenen Spalten: unnötig, Schema war schon da.
+- **push_abo auf `benutzer_id` generalisieren:** sauberer im Modell, aber Migration der
+  Bestands-Abos + Änderung aller `benachrichtige`-Aufrufer (FZ-002/008/009) → zu viel
+  Angriffsfläche für den Nutzen. Additiv ist surgical.
+- **Trainer-Benachrichtigung nur in-app** (Badge): Freigabe macht den Kurs „normal"
+  (Badge verschwindet), Ablehnung löscht ihn — kein verlässliches Outcome-Signal. Push
+  schließt den Loop real.
+- **PushEinstellung dupliziert** für den Trainer: ~100 Zeilen Browser-Logik doppelt →
+  stattdessen eine geteilte, parametrisierte Komponente.
+
+### Konsequenzen
+- Positiv: weniger Tipparbeit beim Anlegen (FZ-021); Trainer erfährt Freigabe/Ablehnung real
+  (FZ-022). `verify:fz022` 7/7 (Abo-Isolation + Trennung Trainer/Mitglied); keine Regression
+  (fz019/fz020 grün); `tsc` + `next build` grün. FZ-021 ist session-/UI-gebunden → über
+  Build/Browser geprüft (keine eigenständige Engine).
+- Offen/Betrieb: Migration `0006` je Umgebung anwenden (Live-DB erledigt). Realer
+  Push-Versand weiterhin browser-/VAPID-abhängig (iOS nur als installierte PWA). Kein
+  DB-CHECK, dass genau eins von mitglied_id/trainer_id gesetzt ist — per Code garantiert.
+
+---
+
 ## 2026-07-06 — FZ-020: Kurstermin-Erstellung — Trainer schlägt vor, Admin gibt frei
 
 **Kontext:** Bislang konnte der Admin Kurstermine nur absagen/verschieben (FZ-009); es gab
