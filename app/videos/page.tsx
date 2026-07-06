@@ -4,6 +4,7 @@ import { requireRolle } from "@/lib/auth/benutzer";
 import { db } from "@/lib/db";
 import { kurstyp, mitglied, onDemandVideo, tarif } from "@/lib/db/schema";
 import { erlaubteVideoTarife, type TarifName } from "@/lib/content/zugriff";
+import { Play, Video } from "@/components/icons";
 
 // FZ-011 — On-Demand-Videos, tarif-gefiltert (BR7). Die Query liefert nur Videos, deren
 // mindest_tarif der Tarif des Mitglieds erreicht — Basic sieht keine (unerlaubter
@@ -50,49 +51,57 @@ export default async function VideosPage() {
 
   return (
     <main className="page">
-      <h1 className="text-2xl font-bold text-ink">On-Demand-Videos</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Dein Tarif: <strong>{tarifName}</strong>. On-Demand ist ab Plus verfügbar.{" "}
-        <Link href="/mein-bereich" className="underline">
-          Mein Bereich
-        </Link>
-      </p>
+      <header className="page-header">
+        <h1 className="page-title">On-Demand-Videos</h1>
+        <p className="subtitle">
+          Dein Tarif: <strong>{tarifName}</strong>. On-Demand ist ab Plus verfügbar.{" "}
+          <Link href="/mein-bereich">Mein Bereich</Link>
+        </p>
+      </header>
 
       {erlaubt.length === 0 ? (
-        <p className="mt-8 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <p className="rounded-card border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           Für den Tarif <strong>Basic</strong> sind keine On-Demand-Videos verfügbar. Mit{" "}
           <strong>Plus</strong> oder <strong>Premium</strong> (Tarifwechsel über den Admin)
           erhältst du Zugriff.
         </p>
+      ) : videos.length === 0 ? (
+        <p className="empty">
+          <span className="empty-icon">
+            <Video />
+          </span>
+          <span>Zurzeit keine Videos verfügbar.</span>
+        </p>
       ) : (
-        <ul className="mt-6 divide-y divide-gray-200">
+        <ul className="stack">
           {videos.map((v) => (
-            <li key={v.videoId} className="flex flex-wrap items-center justify-between gap-3 py-4">
-              <div>
-                <div className="font-medium">{v.titel}</div>
-                <div className="text-sm text-gray-500">
-                  {[v.kurstyp, v.level, v.dauer ? `${v.dauer} Min` : null, v.mindestTarif ? `ab ${v.mindestTarif}` : null]
-                    .filter(Boolean)
-                    .join(" · ")}
+            <li key={v.videoId} className="card">
+              <div className="flex items-start gap-3">
+                <div className="icon-tile">
+                  <Play />
                 </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-ink leading-tight">{v.titel}</div>
+                  <div className="mt-1 text-sm text-muted">
+                    {[v.kurstyp, v.level, v.dauer ? `${v.dauer} Min` : null, v.mindestTarif ? `ab ${v.mindestTarif}` : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </div>
+                </div>
+                {!v.url && <span className="badge badge-muted shrink-0">kein Link</span>}
               </div>
-              {v.url ? (
+              {v.url && (
                 <a
                   href={v.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center rounded-btn bg-brand-strong px-4 text-sm font-medium text-white hover:bg-brand-strong-hover"
+                  className="btn btn-primary btn-block mt-3"
                 >
-                  Ansehen{v.plattform ? ` (${v.plattform})` : ""}
+                  <Play /> Ansehen{v.plattform ? ` (${v.plattform})` : ""}
                 </a>
-              ) : (
-                <span className="text-sm text-gray-400">kein Link</span>
               )}
             </li>
           ))}
-          {videos.length === 0 && (
-            <li className="py-4 text-sm text-gray-500">Zurzeit keine Videos verfügbar.</li>
-          )}
         </ul>
       )}
     </main>

@@ -94,31 +94,35 @@ export default async function KurstermineAdminPage() {
 
   return (
     <main className="page">
-      <h1 className="text-2xl font-bold text-ink">Kurstermin-Verwaltung</h1>
-      <p className="mt-1 text-sm text-muted">
-        Absagen oder verschieben — betroffene Mitglieder (Buchung + Warteliste) werden
-        automatisch benachrichtigt (FZ-009, BR8).
-      </p>
+      <header className="page-header">
+        <h1 className="page-title">Kurstermin-Verwaltung</h1>
+        <p className="subtitle">
+          Absagen oder verschieben — betroffene Mitglieder (Buchung + Warteliste) werden
+          automatisch benachrichtigt (FZ-009, BR8).
+        </p>
+      </header>
 
       {/* FZ-020 — Trainer-Vorschläge freigeben (dann für Mitglieder buchbar) oder ablehnen. */}
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-ink">Freigabe ausstehend</h2>
-        <p className="mt-1 text-sm text-muted">
+      <section>
+        <h2 className="section-title">Freigabe ausstehend</h2>
+        <p className="-mt-2 mb-3 text-sm text-muted">
           Von Trainern vorgeschlagene Kurse. Nach Freigabe erscheinen sie in der Kursliste
           der Mitglieder (FZ-020).
         </p>
-        <ul className="mt-4 space-y-3">
+        <ul className="stack">
           {vorschlaege.map((v) => (
-            <li
-              key={v.kursterminId}
-              className="rounded-card border border-emerald-200 bg-emerald-50/40 p-4"
-            >
-              <div className="font-medium text-ink">
-                {v.kurstyp}{" "}
-                <span className="text-sm font-normal text-muted">· {v.modus}</span>
-              </div>
-              <div className="text-sm text-muted">
-                {DATUM.format(v.start)} Uhr · {v.trainer} · {v.kapazitaet} Plätze
+            <li key={v.kursterminId} className="card">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium text-ink">
+                    {v.kurstyp}{" "}
+                    <span className="text-sm font-normal text-muted">· {v.modus}</span>
+                  </div>
+                  <div className="text-sm text-muted">
+                    {DATUM.format(v.start)} Uhr · {v.trainer} · {v.kapazitaet} Plätze
+                  </div>
+                </div>
+                <span className="badge badge-success shrink-0">Vorschlag</span>
               </div>
               <div className="mt-3 flex gap-3">
                 <form action={gibFrei} className="flex-1">
@@ -136,34 +140,29 @@ export default async function KurstermineAdminPage() {
               </div>
             </li>
           ))}
-          {vorschlaege.length === 0 && (
-            <li className="rounded-card border border-gray-200 p-4 text-sm text-muted">
-              Keine offenen Vorschläge.
-            </li>
-          )}
+          {vorschlaege.length === 0 && <li className="empty">Keine offenen Vorschläge.</li>}
         </ul>
       </section>
 
-      <h2 className="mt-10 text-lg font-semibold text-ink">Anstehende Termine</h2>
-      <ul className="mt-4 space-y-3">
-        {termine.map((t) => {
-          const gebucht = belegungMap.get(t.kursterminId) ?? 0;
-          const wl = wlMap.get(t.kursterminId) ?? 0;
-          return (
-            <li key={t.kursterminId} className="rounded-card border border-gray-200 p-4">
-              <div className="font-medium text-ink">
-                {t.kurstyp}{" "}
-                <span className="text-sm font-normal text-muted">· {t.modus}</span>
-                {t.status === "verschoben" && (
-                  <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-                    {STATUS_LABEL[t.status]}
-                  </span>
-                )}
-              </div>
-              <div className="text-sm text-muted">
-                {DATUM.format(t.start)} Uhr · {t.trainer} · {gebucht} gebucht
-                {wl > 0 && ` · ${wl} Warteliste`}
-              </div>
+      <section className="section">
+        <h2 className="section-title">Anstehende Termine</h2>
+        <ul className="stack">
+          {termine.map((t) => {
+            const gebucht = belegungMap.get(t.kursterminId) ?? 0;
+            const wl = wlMap.get(t.kursterminId) ?? 0;
+            return (
+              <li key={t.kursterminId} className="card">
+                <div className="font-medium text-ink">
+                  {t.kurstyp}{" "}
+                  <span className="text-sm font-normal text-muted">· {t.modus}</span>
+                  {t.status === "verschoben" && (
+                    <span className="badge badge-warn ml-2">{STATUS_LABEL[t.status]}</span>
+                  )}
+                </div>
+                <div className="text-sm text-muted">
+                  {DATUM.format(t.start)} Uhr · {t.trainer} · {gebucht} gebucht
+                  {wl > 0 && ` · ${wl} Warteliste`}
+                </div>
 
               <div className="mt-3 flex flex-col gap-3">
                 {/* Verschieben — nur aus geplant zulässig (spec §2). */}
@@ -194,15 +193,12 @@ export default async function KurstermineAdminPage() {
                   </button>
                 </form>
               </div>
-            </li>
-          );
-        })}
-        {termine.length === 0 && (
-          <li className="rounded-card border border-gray-200 p-4 text-sm text-muted">
-            Keine anstehenden Kurstermine.
-          </li>
-        )}
-      </ul>
+              </li>
+            );
+          })}
+          {termine.length === 0 && <li className="empty">Keine anstehenden Kurstermine.</li>}
+        </ul>
+      </section>
     </main>
   );
 }

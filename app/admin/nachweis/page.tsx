@@ -43,17 +43,19 @@ export default async function NachweisPage() {
 
   return (
     <main className="page">
-      <h1 className="text-2xl font-bold text-ink">Buchungsnachweis</h1>
-      <p className="mt-1 text-sm text-muted">
-        Auditierbares Zeitstempel-Log aller Vorgänge, neueste zuerst (FZ-008, §6). Die
-        Zeitstempel sind unveränderbar (&bdquo;nicht verhandelbar&ldquo;).
-      </p>
+      <header className="page-header">
+        <h1 className="page-title">Buchungsnachweis</h1>
+        <p className="subtitle">
+          Auditierbares Zeitstempel-Log aller Vorgänge, neueste zuerst (FZ-008, §6). Die
+          Zeitstempel sind unveränderbar (&bdquo;nicht verhandelbar&ldquo;).
+        </p>
+      </header>
 
-      <ul className="mt-6 space-y-3">
+      <ul className="stack">
         {ereignisse.map((e, i) => (
-          <li key={i} className="rounded-card border border-gray-200 p-4">
+          <li key={i} className="card">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded px-2 py-0.5 text-xs ${VORGANG_FARBE[e.vorgang]}`}>
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${VORGANG_FARBE[e.vorgang]}`}>
                 {VORGANG_LABEL[e.vorgang]}
               </span>
               <span className="font-mono text-xs text-muted">
@@ -67,11 +69,7 @@ export default async function NachweisPage() {
             {e.detail && <div className="mt-1 text-xs text-muted">{e.detail}</div>}
           </li>
         ))}
-        {ereignisse.length === 0 && (
-          <li className="rounded-card border border-gray-200 p-4 text-sm text-muted">
-            Noch keine Vorgänge.
-          </li>
-        )}
+        {ereignisse.length === 0 && <li className="empty">Noch keine Vorgänge.</li>}
       </ul>
     </main>
   );

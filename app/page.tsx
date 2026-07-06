@@ -1,21 +1,35 @@
 import Link from "next/link";
+import type { ComponentType, SVGProps } from "react";
 import { getBenutzer } from "@/lib/auth/benutzer";
 import { logout } from "./login/actions";
+import {
+  Users,
+  Calendar,
+  ClipboardList,
+  CheckCircle,
+  CreditCard,
+  Dumbbell,
+  User,
+  Video,
+  LogIn,
+} from "@/components/icons";
+
+type NavItem = { href: string; label: string; icon: ComponentType<SVGProps<SVGSVGElement>> };
 
 // Navigations-Ziele je Rolle (Labels/Hrefs unverändert gegenüber vorher).
-const NAV: Record<string, { href: string; label: string }[]> = {
+const NAV: Record<string, NavItem[]> = {
   admin: [
-    { href: "/admin/mitglieder", label: "Mitglieder-Verwaltung" },
-    { href: "/admin/kurstermine", label: "Kurstermin-Verwaltung" },
-    { href: "/admin/nachweis", label: "Buchungsnachweis" },
-    { href: "/admin/no-show", label: "No-Show-Auswertung" },
-    { href: "/admin/kurstypen", label: "Kurspreise" },
+    { href: "/admin/mitglieder", label: "Mitglieder-Verwaltung", icon: Users },
+    { href: "/admin/kurstermine", label: "Kurstermin-Verwaltung", icon: Calendar },
+    { href: "/admin/nachweis", label: "Buchungsnachweis", icon: ClipboardList },
+    { href: "/admin/no-show", label: "No-Show-Auswertung", icon: CheckCircle },
+    { href: "/admin/kurstypen", label: "Kurspreise", icon: CreditCard },
   ],
-  trainer: [{ href: "/trainer", label: "Mein Kursplan" }],
+  trainer: [{ href: "/trainer", label: "Mein Kursplan", icon: Calendar }],
   mitglied: [
-    { href: "/kurse", label: "Kurse buchen" },
-    { href: "/mein-bereich", label: "Mein Bereich" },
-    { href: "/videos", label: "Videos" },
+    { href: "/kurse", label: "Kurse buchen", icon: Dumbbell },
+    { href: "/mein-bereich", label: "Mein Bereich", icon: User },
+    { href: "/videos", label: "Videos", icon: Video },
   ],
 };
 
@@ -25,29 +39,33 @@ export default async function Home() {
 
   return (
     <main className="page">
-      <header className="pt-1">
-        <h1 className="text-2xl font-bold text-ink">FitZone</h1>
-        <p className="mt-1 text-sm text-muted">
+      <header className="page-header">
+        <h1 className="page-title">FitZone</h1>
+        <p className="subtitle">
           Kursbuchung, Warteliste und Anwesenheit für das FitZone-Studio.
         </p>
       </header>
 
       {benutzer ? (
-        <div className="mt-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <div className="card">
             <p className="text-sm text-muted">Angemeldet als</p>
             <p className="mt-0.5 font-medium text-ink break-all">{benutzer.email}</p>
-            <span className="mt-2 inline-block rounded-full border border-surface-border bg-white px-2.5 py-0.5 text-xs font-medium text-brand-strong">
-              {benutzer.rolle}
-            </span>
+            <span className="badge badge-success mt-2">{benutzer.rolle}</span>
           </div>
 
-          <nav className="flex flex-col gap-2">
-            {links.map((l) => (
-              <Link key={l.href} href={l.href} className="navlink">
-                {l.label}
-              </Link>
-            ))}
+          <nav className="stack">
+            {links.map((l) => {
+              const Icon = l.icon;
+              return (
+                <Link key={l.href} href={l.href} className="navlink">
+                  <span className="icon-tile" style={{ width: 36, height: 36 }}>
+                    <Icon />
+                  </span>
+                  <span className="navlink-label">{l.label}</span>
+                </Link>
+              );
+            })}
           </nav>
 
           <form action={logout}>
@@ -57,18 +75,10 @@ export default async function Home() {
           </form>
         </div>
       ) : (
-        <div className="mt-6">
-          <Link href="/login" className="btn btn-primary btn-block">
-            Anmelden
-          </Link>
-        </div>
+        <Link href="/login" className="btn btn-primary btn-block">
+          <LogIn /> Anmelden
+        </Link>
       )}
-
-      <p className="mt-8 text-xs text-muted">
-        Aktueller Stand: Kursbuchung/Warteliste/Storno (FZ-001–003), Auth +
-        Mitgliederstammdaten (FZ-006) und Trainer-Anwesenheit (FZ-004/005). Details in{" "}
-        <code>docs/backlog.md</code>.
-      </p>
     </main>
   );
 }

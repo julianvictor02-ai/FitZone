@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   bucheKursterminAction,
@@ -8,6 +8,7 @@ import {
   bestaetigeNachrueckungAction,
   storniereBuchungAction,
 } from "./actions";
+import { Check, CheckCircle, Hourglass, Ban, XCircle } from "@/components/icons";
 
 export type Zustand =
   | "buchbar"
@@ -44,8 +45,8 @@ const AKTUALISIEREN = new Set([
   "platz_frei",
 ]);
 
-const btn =
-  "inline-flex min-h-11 items-center justify-center rounded-btn px-4 text-sm font-medium disabled:cursor-not-allowed";
+// Positive Ergebnisse → grüner Erfolgs-Toast + kurzer haptischer Impuls.
+const ERFOLG = new Set(["bestaetigt", "wartend", "nachgerueckt", "storniert"]);
 
 const EUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
@@ -64,12 +65,22 @@ export function KursterminAktion({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [meldung, setMeldung] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function zeigeToast(text: string, ok: boolean) {
+    setToast({ text, ok });
+    if (ok && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(18); // dezenter Erfolgs-Impuls (Mobil)
+    }
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2600);
+  }
 
   function run(action: () => Promise<{ status: string }>) {
     start(async () => {
       const r = await action();
-      setMeldung(MELDUNG[r.status] ?? r.status);
+      zeigeToast(MELDUNG[r.status] ?? r.status, ERFOLG.has(r.status));
       if (AKTUALISIEREN.has(r.status)) router.refresh();
     });
   }
@@ -78,14 +89,15 @@ export function KursterminAktion({
     start(async () => {
       const r = await storniereBuchungAction(kursterminId);
       if (r.status === "storniert") {
-        setMeldung(
+        zeigeToast(
           r.gebuehrFaellig
             ? `Storniert — Gebühr fällig${r.betrag != null ? ` (${EUR.format(r.betrag)})` : ""}`
             : "Storniert ✓",
+          true,
         );
         router.refresh();
       } else {
-        setMeldung(MELDUNG[r.status] ?? r.status);
+        zeigeToast(MELDUNG[r.status] ?? r.status, false);
       }
     });
   }
@@ -95,71 +107,86 @@ export function KursterminAktion({
     : null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-2">
       {zustand === "buchbar" && (
         <button
           onClick={() => run(() => bucheKursterminAction(kursterminId))}
           disabled={pending}
-          className={`${btn} bg-brand-strong text-white hover:bg-brand-strong-hover disabled:bg-gray-300`}
+          className="btn btn-primary btn-block"
         >
-          {pending ? "…" : "Buchen"}
+          {pending ? <span className="spinner" /> : <><Check /> Buchen</>}
         </button>
       )}
 
+      {/* Voller Kurs: gleiche Stelle, aus „Buchen" wird „Auf Warteliste" (FIFO server-seitig). */}
       {zustand === "voll" && (
-        <button
-          onClick={() => run(() => warteAction(kursterminId))}
-          disabled={pending}
-          className={`${btn} border border-gray-400 text-ink hover:border-brand disabled:opacity-50`}
-        >
-          {pending ? "…" : "Warteliste beitreten"}
-        </button>
+        <>
+          <button
+            onClick={() => run(() => warteAction(kursterminId))}
+            disabled={pending}
+            className="btn btn-primary btn-block"
+          >
+            {pending ? <span className="spinner" /> : <><Hourglass /> Auf Warteliste</>}
+          </button>
+          <p className="hinweis">Kurs ausgebucht — du rückst per Warteliste (FIFO) nach.</p>
+        </>
       )}
 
       {zustand === "benachrichtigt" && (
-        <button
-          onClick={() => run(() => bestaetigeNachrueckungAction(kursterminId))}
-          disabled={pending}
-          className={`${btn} bg-brand-strong text-white hover:bg-brand-strong-hover disabled:bg-gray-300`}
-        >
-          {pending ? "…" : `Nachrücken bestätigen${frist ? ` (bis ${frist})` : ""}`}
-        </button>
+        <>
+          <button
+            onClick={() => run(() => bestaetigeNachrueckungAction(kursterminId))}
+            disabled={pending}
+            className="btn btn-primary btn-block"
+          >
+            {pending ? <span className="spinner" /> : <><Check /> Nachrücken bestätigen</>}
+          </button>
+          <p className="hinweis hinweis-ok">
+            <CheckCircle /> Platz frei{frist ? ` — bitte bis ${frist} bestätigen` : ""}.
+          </p>
+        </>
       )}
 
       {zustand === "gebucht" && (
         <>
-          <span className="text-sm font-medium text-green-700">Gebucht ✓</span>
-          <button
-            onClick={onStorniere}
-            disabled={pending}
-            title={stornoGebuehrDroht ? "Innerhalb der Frist — Stornogebühr fällig" : undefined}
-            className={`${btn} border border-gray-400 disabled:opacity-50`}
-          >
-            {pending ? "…" : stornoGebuehrDroht ? "Stornieren (Gebühr)" : "Stornieren"}
-          </button>
+          <div className="flex items-center justify-between gap-3">
+            <span className="badge badge-success pop">
+              <CheckCircle /> Gebucht
+            </span>
+            <button onClick={onStorniere} disabled={pending} className="btn btn-outline">
+              {pending ? <span className="spinner spinner-ink" /> : <><XCircle /> Stornieren</>}
+            </button>
+          </div>
+          {stornoGebuehrDroht && (
+            <p className="hinweis">Innerhalb der Frist — bei Storno wird eine Gebühr fällig.</p>
+          )}
         </>
       )}
 
       {zustand === "wartend" && (
-        <span className="text-sm text-gray-600">
-          Warteliste · Position {position}
+        <span className="badge badge-warn">
+          <Hourglass /> Warteliste · Platz {position}
         </span>
       )}
 
       {zustand === "warteliste_voll" && (
-        <span className="text-sm text-amber-700">Warteliste voll</span>
-      )}
-
-      {zustand === "livestream_gesperrt" && (
-        <span
-          className="text-sm text-gray-500"
-          title="Livestream-Kurse sind ab Tarif Plus buchbar"
-        >
-          Nur ab Plus
+        <span className="badge badge-warn">
+          <Ban /> Warteliste voll
         </span>
       )}
 
-      {meldung && <span className="text-sm text-gray-600">{meldung}</span>}
+      {zustand === "livestream_gesperrt" && (
+        <span className="badge badge-muted" title="Livestream-Kurse sind ab Tarif Plus buchbar">
+          <Ban /> Nur ab Plus
+        </span>
+      )}
+
+      {toast && (
+        <div className={`toast ${toast.ok ? "toast-ok" : ""}`} role="status" aria-live="polite">
+          {toast.ok ? <CheckCircle /> : <XCircle />}
+          {toast.text}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { PushAboEingang } from "@/lib/push/abo";
+import { Bell } from "@/components/icons";
 
 // FZ-019/FZ-022 — „Benachrichtigungen aktivieren" (Web-Push). Registriert den Service
 // Worker, fragt die Berechtigung ab, abonniert und meldet das Abo an den Server. Die
@@ -106,28 +107,20 @@ export function PushEinstellung({
   };
 
   return (
-    <section className="mt-8 rounded border border-gray-200 p-4">
+    <section className="card mt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Benachrichtigungen</h2>
-          <p className="mt-1 max-w-prose text-sm text-gray-500">{HINWEIS[status]}</p>
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold text-ink">Benachrichtigungen</h2>
+          <p className="mt-1 max-w-prose text-sm text-muted">{HINWEIS[status]}</p>
         </div>
         {status === "aus" && (
-          <button
-            onClick={aktiviere}
-            disabled={busy}
-            className="inline-flex min-h-11 items-center rounded-btn bg-brand-strong px-4 text-sm font-medium text-white hover:bg-brand-strong-hover disabled:opacity-50"
-          >
-            {busy ? "…" : "Aktivieren"}
+          <button onClick={aktiviere} disabled={busy} className="btn btn-primary">
+            {busy ? <span className="spinner" /> : <><Bell /> Aktivieren</>}
           </button>
         )}
         {status === "an" && (
-          <button
-            onClick={deaktiviere}
-            disabled={busy}
-            className="rounded border border-gray-400 px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {busy ? "…" : "Deaktivieren"}
+          <button onClick={deaktiviere} disabled={busy} className="btn btn-outline">
+            {busy ? <span className="spinner spinner-ink" /> : "Deaktivieren"}
           </button>
         )}
       </div>

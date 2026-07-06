@@ -1,4 +1,5 @@
 import { login } from "./actions";
+import { LogIn } from "@/components/icons";
 
 export default async function LoginPage({
   searchParams,
@@ -9,33 +10,32 @@ export default async function LoginPage({
 
   return (
     <main className="page">
-      <h1 className="text-2xl font-bold text-ink">Anmelden</h1>
+      <header className="page-header">
+        <h1 className="page-title">Anmelden</h1>
+        <p className="subtitle">Melde dich mit deiner FitZone-Zugangsdaten an.</p>
+      </header>
       {fehler && (
-        <p className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mb-4 rounded-btn bg-red-50 px-3 py-2 text-sm text-red-700">
           Anmeldung fehlgeschlagen. E-Mail oder Passwort prüfen.
         </p>
       )}
-      <form action={login} className="mt-6 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
+      <form action={login} className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
           E-Mail
-          <input
-            type="email"
-            name="email"
-            required
-            className="min-h-11 rounded border border-gray-300 px-3 py-2"
-          />
+          <input type="email" name="email" required autoComplete="email" className="input" />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
           Passwort
           <input
             type="password"
             name="password"
             required
-            className="min-h-11 rounded border border-gray-300 px-3 py-2"
+            autoComplete="current-password"
+            className="input"
           />
         </label>
-        <button type="submit" className="btn btn-primary btn-block mt-2">
-          Anmelden
+        <button type="submit" className="btn btn-primary btn-block mt-1">
+          <LogIn /> Anmelden
         </button>
       </form>
     </main>

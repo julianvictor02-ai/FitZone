@@ -15,6 +15,7 @@ import { MAX_WARTELISTE } from "@/lib/booking/warteliste";
 import { stornoGebuehrFaellig } from "@/lib/booking/storno";
 import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 import { KursterminAktion, type Zustand } from "./KursterminAktion";
+import { kursIcon, Users, XCircle, Compass } from "@/components/icons";
 
 const DATUM = new Intl.DateTimeFormat("de-DE", {
   weekday: "short",
@@ -133,13 +134,15 @@ export default async function KursePage({
 
   return (
     <main className="page">
-      <h1 className="text-2xl font-bold text-ink">Kurse buchen</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Freie Plätze als Anzahl (keine Namen). Volle Kurse: Warteliste (max.{" "}
-        {MAX_WARTELISTE}, FIFO).
-      </p>
+      <header className="page-header">
+        <h1 className="page-title">Kurse buchen</h1>
+        <p className="subtitle">
+          Volle Kurse werden automatisch zur Warteliste (max. {MAX_WARTELISTE}, FIFO). Es
+          werden nur freie Plätze als Zahl gezeigt — keine Namen.
+        </p>
+      </header>
 
-      <nav className="mt-4 flex gap-2 text-sm">
+      <nav className="mb-5 flex gap-2">
         {[
           { label: "Alle", wert: null },
           { label: "Studio", wert: "Studio" },
@@ -148,10 +151,8 @@ export default async function KursePage({
           <Link
             key={f.label}
             href={filterLink(f.wert)}
-            className={`inline-flex min-h-11 items-center rounded-btn border px-3 ${
-              modusFilter === f.wert || (!modusFilter && f.wert === null)
-                ? "border-brand-strong bg-brand-strong text-white"
-                : "border-gray-300 text-ink"
+            className={`chip ${
+              modusFilter === f.wert || (!modusFilter && f.wert === null) ? "chip-active" : ""
             }`}
           >
             {f.label}
@@ -159,7 +160,7 @@ export default async function KursePage({
         ))}
       </nav>
 
-      <ul className="mt-6 divide-y divide-gray-200">
+      <ul className="stack">
         {termine.map((t) => {
           const belegt = belegungMap.get(t.kursterminId) ?? 0;
           const frei = Math.max(0, t.kapazitaet - belegt);
@@ -194,44 +195,66 @@ export default async function KursePage({
             zustand = "livestream_gesperrt";
           }
 
+          const KursIcon = kursIcon(t.kurstyp);
           return (
-            <li
-              key={t.kursterminId}
-              className="flex flex-wrap items-center justify-between gap-4 py-4"
-            >
-              <div>
-                <div className="font-medium">
-                  {t.kurstyp}{" "}
-                  <span className="text-sm font-normal text-gray-500">· {t.modus}</span>
+            <li key={t.kursterminId} className="card">
+              <div className="flex items-start gap-3">
+                <div className="icon-tile">
+                  <KursIcon />
                 </div>
-                <div className="text-sm text-gray-500">
-                  {DATUM.format(t.start)} Uhr
-                  {t.dauerMinuten != null && ` · ${t.dauerMinuten} Min`} · {t.trainer} ·{" "}
-                  <span className={frei === 0 ? "text-amber-700" : ""}>
-                    {frei} von {t.kapazitaet} frei
-                  </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-ink leading-tight">{t.kurstyp}</h3>
+                  <p className="mt-1 text-sm text-muted">
+                    {DATUM.format(t.start)} Uhr
+                    {t.dauerMinuten != null && ` · ${t.dauerMinuten} Min`}
+                  </p>
+                  <p className="text-sm text-muted">
+                    {t.trainer} · {t.modus}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {frei > 0 ? (
+                    <span className="badge badge-frei">
+                      <Users /> {frei} frei
+                    </span>
+                  ) : (
+                    <span className="badge badge-warn">
+                      <XCircle /> Ausgebucht
+                    </span>
+                  )}
                   {frei === 0 && wl.length > 0 && (
-                    <span> · Warteliste {wl.length}/{MAX_WARTELISTE}</span>
+                    <span className="text-xs text-muted">
+                      Warteliste {wl.length}/{MAX_WARTELISTE}
+                    </span>
                   )}
                 </div>
               </div>
-              <KursterminAktion
-                kursterminId={t.kursterminId}
-                zustand={zustand}
-                position={position}
-                fristBisISO={fristBisISO}
-                stornoGebuehrDroht={
-                  zustand === "gebucht"
-                    ? stornoGebuehrFaellig(t.start, stornoBefreit)
-                    : undefined
-                }
-              />
+
+              <div className="mt-3">
+                <KursterminAktion
+                  kursterminId={t.kursterminId}
+                  zustand={zustand}
+                  position={position}
+                  fristBisISO={fristBisISO}
+                  stornoGebuehrDroht={
+                    zustand === "gebucht"
+                      ? stornoGebuehrFaellig(t.start, stornoBefreit)
+                      : undefined
+                  }
+                />
+              </div>
             </li>
           );
         })}
         {termine.length === 0 && (
-          <li className="py-4 text-sm text-gray-500">
-            Keine buchbaren Kurstermine{modusFilter ? ` (${modusFilter})` : ""}.
+          <li className="empty">
+            <span className="empty-icon">
+              <Compass />
+            </span>
+            <span>
+              Aktuell keine buchbaren Kurstermine{modusFilter ? ` (${modusFilter})` : ""}. Schau
+              später wieder vorbei.
+            </span>
           </li>
         )}
       </ul>

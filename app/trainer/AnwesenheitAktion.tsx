@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { erfasseAnwesenheitAction } from "./actions";
 import type { AnwesenheitWert } from "@/lib/attendance/anwesenheit";
+import { Check, XCircle, Clock } from "@/components/icons";
 
 // FZ-005 — Anwesenheit abhaken. Ruft die (in FZ-004 verifizierte) Server-Action;
 // erneutes Klicken der aktiven Auswahl setzt auf "offen" zurück (Korrektur).
@@ -17,14 +18,19 @@ const FEHLER: Record<string, string> = {
   kein_trainer: "Kein Trainer-Profil",
 };
 
-const OPTIONEN: { wert: Exclude<AnwesenheitWert, "offen">; label: string; aktiv: string }[] = [
-  { wert: "anwesend", label: "Anwesend", aktiv: "bg-green-700 text-white border-green-700" },
-  { wert: "no_show", label: "No-Show", aktiv: "bg-red-700 text-white border-red-700" },
-  { wert: "entschuldigt", label: "Entschuldigt", aktiv: "bg-amber-600 text-white border-amber-600" },
+const OPTIONEN: {
+  wert: Exclude<AnwesenheitWert, "offen">;
+  label: string;
+  aktiv: string;
+  Icon: typeof Check;
+}[] = [
+  { wert: "anwesend", label: "Anwesend", aktiv: "bg-green-700 text-white border-green-700", Icon: Check },
+  { wert: "no_show", label: "No-Show", aktiv: "bg-red-700 text-white border-red-700", Icon: XCircle },
+  { wert: "entschuldigt", label: "Entschuldigt", aktiv: "bg-amber-600 text-white border-amber-600", Icon: Clock },
 ];
 
 const base =
-  "inline-flex min-h-11 items-center rounded-btn border px-3 text-sm font-medium disabled:opacity-50";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-btn border px-3 text-sm font-semibold transition-transform active:scale-95 disabled:opacity-50";
 const inaktiv = "border-gray-300 text-ink hover:border-brand";
 
 export function AnwesenheitAktion({
@@ -72,7 +78,7 @@ export function AnwesenheitAktion({
             title={aktiv ? "Nochmal klicken = zurücksetzen" : undefined}
             className={`${base} ${aktiv ? o.aktiv : inaktiv}`}
           >
-            {o.label}
+            <o.Icon width={16} height={16} /> {o.label}
           </button>
         );
       })}
