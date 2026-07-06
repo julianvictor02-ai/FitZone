@@ -20,7 +20,11 @@ import {
 
 const ADMIN_EMAIL = "admin@fitzone.test";
 const MEMBER_EMAIL = "member@fitzone.test";
-const TRAINER_EMAIL = "marie@fitzone.test";
+// Muss mit dem Login-Provisioning (scripts/provision-users.ts) übereinstimmen, sonst
+// entstehen zwei „Marie"-Trainer-Datensätze: der Login hängt am einen, die per bootstrap
+// angelegten Kurstermine (und damit alle Buchungen) am anderen — dann sieht die
+// eingeloggte Marie ihre Teilnehmer nicht. Beide nutzen daher marie@fitzone.de.
+const TRAINER_EMAIL = "marie@fitzone.de";
 
 async function authId(email: string): Promise<string | null> {
   const rows = (await db.execute(
