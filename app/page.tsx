@@ -25,24 +25,22 @@ export default async function Home() {
 
   return (
     <main className="page">
-      <header className="pt-1">
-        <h1 className="text-2xl font-bold text-ink">FitZone</h1>
-        <p className="mt-1 text-sm text-muted">
+      <header className="page-header">
+        <h1 className="page-title">FitZone</h1>
+        <p className="subtitle">
           Kursbuchung, Warteliste und Anwesenheit für das FitZone-Studio.
         </p>
       </header>
 
       {benutzer ? (
-        <div className="mt-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <div className="card">
             <p className="text-sm text-muted">Angemeldet als</p>
             <p className="mt-0.5 font-medium text-ink break-all">{benutzer.email}</p>
-            <span className="mt-2 inline-block rounded-full border border-surface-border bg-white px-2.5 py-0.5 text-xs font-medium text-brand-strong">
-              {benutzer.rolle}
-            </span>
+            <span className="badge badge-success mt-2">{benutzer.rolle}</span>
           </div>
 
-          <nav className="flex flex-col gap-2">
+          <nav className="stack">
             {links.map((l) => (
               <Link key={l.href} href={l.href} className="navlink">
                 {l.label}
@@ -57,18 +55,10 @@ export default async function Home() {
           </form>
         </div>
       ) : (
-        <div className="mt-6">
-          <Link href="/login" className="btn btn-primary btn-block">
-            Anmelden
-          </Link>
-        </div>
+        <Link href="/login" className="btn btn-primary btn-block">
+          Anmelden
+        </Link>
       )}
-
-      <p className="mt-8 text-xs text-muted">
-        Aktueller Stand: Kursbuchung/Warteliste/Storno (FZ-001–003), Auth +
-        Mitgliederstammdaten (FZ-006) und Trainer-Anwesenheit (FZ-004/005). Details in{" "}
-        <code>docs/backlog.md</code>.
-      </p>
     </main>
   );
 }

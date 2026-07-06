@@ -29,12 +29,6 @@ const DATUM = new Intl.DateTimeFormat("de-DE", {
   minute: "2-digit",
 });
 
-const STATUS_BADGE: Record<string, string> = {
-  verschoben: "text-amber-700",
-  geplant: "text-gray-500",
-  vorgeschlagen: "text-emerald-700",
-};
-
 export default async function TrainerPage() {
   const me = await requireRolle("trainer");
   if (!me.trainerId) {
@@ -112,10 +106,12 @@ export default async function TrainerPage() {
 
   return (
     <main className="page">
-      <h1 className="text-2xl font-bold text-ink">Mein Kursplan</h1>
-      <p className="mt-1 text-sm text-muted">
-        Nur deine Kurse. Anwesenheit lässt sich ab Kursbeginn abhaken (FZ-005).
-      </p>
+      <header className="page-header">
+        <h1 className="page-title">Mein Kursplan</h1>
+        <p className="subtitle">
+          Nur deine Kurse. Anwesenheit lässt sich ab Kursbeginn abhaken (FZ-005).
+        </p>
+      </header>
 
       {/* FZ-020/FZ-021 — Kurs vorschlagen (Kapazität aus Kurstyp-Standard vorbelegt). */}
       <KursVorschlagFormular kurstypen={kurstypen} schlageVor={schlageKursVor} />
@@ -132,19 +128,19 @@ export default async function TrainerPage() {
           const liste = byTermin.get(t.kursterminId) ?? [];
           const erfassbar = t.start <= jetzt;
           return (
-            <li key={t.kursterminId} className="rounded-card border border-gray-200 p-4">
+            <li key={t.kursterminId} className="card">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <div className="font-medium">
+                <div className="font-medium text-ink">
                   {t.kurstyp}{" "}
-                  <span className="text-sm font-normal text-gray-500">· {t.modus}</span>
+                  <span className="text-sm font-normal text-muted">· {t.modus}</span>
                   {t.status === "verschoben" && (
-                    <span className="ml-2 text-xs text-amber-700">(verschoben)</span>
+                    <span className="badge badge-warn ml-2">Verschoben</span>
                   )}
                   {t.status === "vorgeschlagen" && (
-                    <span className="ml-2 text-xs text-emerald-700">(wartet auf Freigabe)</span>
+                    <span className="badge badge-success ml-2">Wartet auf Freigabe</span>
                   )}
                 </div>
-                <div className={`text-sm ${STATUS_BADGE[t.status] ?? "text-gray-500"}`}>
+                <div className="text-sm text-muted">
                   {DATUM.format(t.start)} Uhr
                   {t.dauerMinuten != null && <span className="text-gray-400"> · {t.dauerMinuten} Min</span>}
                   {!erfassbar && <span className="ml-2 text-gray-400">· noch nicht begonnen</span>}

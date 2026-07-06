@@ -24,15 +24,17 @@ export default async function MitgliederPage() {
 
   return (
     <main className="page">
-      <h1 className="text-2xl font-bold text-ink">Mitglieder-Verwaltung</h1>
-      <p className="mt-1 text-sm text-muted">
-        Stammdaten, Tarif und Status — nur durch Admin pflegbar (FZ-006).
-      </p>
+      <header className="page-header">
+        <h1 className="page-title">Mitglieder-Verwaltung</h1>
+        <p className="subtitle">
+          Stammdaten, Tarif und Status — nur durch Admin pflegbar (FZ-006).
+        </p>
+      </header>
 
       {/* Neues Mitglied */}
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-ink">Neues Mitglied</h2>
-        <form action={erstelleMitglied} className="mt-3 flex flex-col gap-3">
+      <section>
+        <h2 className="section-title">Neues Mitglied</h2>
+        <form action={erstelleMitglied} className="card flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm text-muted">
             Name
             <input name="name" required className="input" />
@@ -62,15 +64,22 @@ export default async function MitgliederPage() {
       </section>
 
       {/* Bestehende Mitglieder */}
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-ink">
-          Mitglieder ({mitglieder.length})
-        </h2>
-        <ul className="mt-3 space-y-3">
+      <section className="section">
+        <h2 className="section-title">Mitglieder ({mitglieder.length})</h2>
+        <ul className="stack">
           {mitglieder.map((m) => (
-            <li key={m.mitgliedId} className="rounded-card border border-gray-200 p-4">
-              <div className="font-medium text-ink">{m.name}</div>
-              <div className="text-sm text-muted break-all">{m.email}</div>
+            <li key={m.mitgliedId} className="card">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium text-ink">{m.name}</div>
+                  <div className="text-sm text-muted break-all">{m.email}</div>
+                </div>
+                <span
+                  className={`badge shrink-0 ${m.status === "aktiv" ? "badge-success" : "badge-muted"}`}
+                >
+                  {m.status}
+                </span>
+              </div>
               <form action={aktualisiereMitglied} className="mt-3 flex flex-col gap-3">
                 <input type="hidden" name="mitgliedId" value={m.mitgliedId} />
                 <label className="flex flex-col gap-1 text-sm text-muted">
@@ -96,11 +105,7 @@ export default async function MitgliederPage() {
               </form>
             </li>
           ))}
-          {mitglieder.length === 0 && (
-            <li className="rounded-card border border-gray-200 p-4 text-sm text-muted">
-              Noch keine Mitglieder.
-            </li>
-          )}
+          {mitglieder.length === 0 && <li className="empty">Noch keine Mitglieder.</li>}
         </ul>
       </section>
     </main>

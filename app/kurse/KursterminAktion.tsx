@@ -44,9 +44,6 @@ const AKTUALISIEREN = new Set([
   "platz_frei",
 ]);
 
-const btn =
-  "inline-flex min-h-11 items-center justify-center rounded-btn px-4 text-sm font-medium disabled:cursor-not-allowed";
-
 const EUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
 export function KursterminAktion({
@@ -95,71 +92,79 @@ export function KursterminAktion({
     : null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-2">
       {zustand === "buchbar" && (
         <button
           onClick={() => run(() => bucheKursterminAction(kursterminId))}
           disabled={pending}
-          className={`${btn} bg-brand-strong text-white hover:bg-brand-strong-hover disabled:bg-gray-300`}
+          className="btn btn-primary btn-block"
         >
           {pending ? "…" : "Buchen"}
         </button>
       )}
 
+      {/* Voller Kurs: gleiche Stelle, aus „Buchen" wird „Auf Warteliste" (FIFO server-seitig). */}
       {zustand === "voll" && (
-        <button
-          onClick={() => run(() => warteAction(kursterminId))}
-          disabled={pending}
-          className={`${btn} border border-gray-400 text-ink hover:border-brand disabled:opacity-50`}
-        >
-          {pending ? "…" : "Warteliste beitreten"}
-        </button>
+        <>
+          <button
+            onClick={() => run(() => warteAction(kursterminId))}
+            disabled={pending}
+            className="btn btn-primary btn-block"
+          >
+            {pending ? "…" : "Auf Warteliste"}
+          </button>
+          <p className="hinweis">Kurs ausgebucht — du rückst per Warteliste (FIFO) nach.</p>
+        </>
       )}
 
       {zustand === "benachrichtigt" && (
-        <button
-          onClick={() => run(() => bestaetigeNachrueckungAction(kursterminId))}
-          disabled={pending}
-          className={`${btn} bg-brand-strong text-white hover:bg-brand-strong-hover disabled:bg-gray-300`}
-        >
-          {pending ? "…" : `Nachrücken bestätigen${frist ? ` (bis ${frist})` : ""}`}
-        </button>
+        <>
+          <button
+            onClick={() => run(() => bestaetigeNachrueckungAction(kursterminId))}
+            disabled={pending}
+            className="btn btn-primary btn-block"
+          >
+            {pending ? "…" : "Nachrücken bestätigen"}
+          </button>
+          <p className="hinweis hinweis-ok">
+            Platz frei{frist ? ` — bitte bis ${frist} bestätigen` : ""}.
+          </p>
+        </>
       )}
 
       {zustand === "gebucht" && (
         <>
-          <span className="text-sm font-medium text-green-700">Gebucht ✓</span>
-          <button
-            onClick={onStorniere}
-            disabled={pending}
-            title={stornoGebuehrDroht ? "Innerhalb der Frist — Stornogebühr fällig" : undefined}
-            className={`${btn} border border-gray-400 disabled:opacity-50`}
-          >
-            {pending ? "…" : stornoGebuehrDroht ? "Stornieren (Gebühr)" : "Stornieren"}
-          </button>
+          <div className="flex items-center justify-between gap-3">
+            <span className="badge badge-success">Gebucht ✓</span>
+            <button
+              onClick={onStorniere}
+              disabled={pending}
+              className="btn btn-outline"
+            >
+              {pending ? "…" : "Stornieren"}
+            </button>
+          </div>
+          {stornoGebuehrDroht && (
+            <p className="hinweis">Innerhalb der Frist — bei Storno wird eine Gebühr fällig.</p>
+          )}
         </>
       )}
 
       {zustand === "wartend" && (
-        <span className="text-sm text-gray-600">
-          Warteliste · Position {position}
-        </span>
+        <span className="badge badge-warn">Warteliste · Platz {position}</span>
       )}
 
       {zustand === "warteliste_voll" && (
-        <span className="text-sm text-amber-700">Warteliste voll</span>
+        <span className="badge badge-warn">Warteliste voll</span>
       )}
 
       {zustand === "livestream_gesperrt" && (
-        <span
-          className="text-sm text-gray-500"
-          title="Livestream-Kurse sind ab Tarif Plus buchbar"
-        >
+        <span className="badge badge-muted" title="Livestream-Kurse sind ab Tarif Plus buchbar">
           Nur ab Plus
         </span>
       )}
 
-      {meldung && <span className="text-sm text-gray-600">{meldung}</span>}
+      {meldung && <span className="hinweis" role="status">{meldung}</span>}
     </div>
   );
 }
