@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { kurstyp, mitglied, onDemandVideo, tarif } from "@/lib/db/schema";
 import { erlaubteVideoTarife, type TarifName } from "@/lib/content/zugriff";
 import { Play, Video } from "@/components/icons";
+import { YouTubePlayer } from "@/components/YouTubePlayer";
 
 // FZ-011 — On-Demand-Videos, tarif-gefiltert (BR7). Die Query liefert nur Videos, deren
 // mindest_tarif der Tarif des Mitglieds erreicht — Basic sieht keine (unerlaubter
@@ -90,7 +91,11 @@ export default async function VideosPage() {
                 </div>
                 {!v.url && <span className="badge badge-muted shrink-0">kein Link</span>}
               </div>
-              {v.url && (
+              {/* YouTube: In-App-Player (kein Verlassen der App). Sonstige Plattformen:
+                  bestehender externer Link — Logik unverändert. */}
+              {v.plattform === "YouTube" && v.url ? (
+                <YouTubePlayer videoId={v.url} titel={v.titel} className="mt-3" />
+              ) : v.url ? (
                 <a
                   href={v.url}
                   target="_blank"
@@ -99,7 +104,7 @@ export default async function VideosPage() {
                 >
                   <Play /> Ansehen{v.plattform ? ` (${v.plattform})` : ""}
                 </a>
-              )}
+              ) : null}
             </li>
           ))}
         </ul>
