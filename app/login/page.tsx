@@ -1,5 +1,5 @@
-import { login } from "./actions";
-import { LogIn } from "@/components/icons";
+import { Dumbbell } from "@/components/icons";
+import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage({
   searchParams,
@@ -9,35 +9,19 @@ export default async function LoginPage({
   const { fehler } = await searchParams;
 
   return (
-    <main className="page">
-      <header className="page-header">
-        <h1 className="page-title">Anmelden</h1>
-        <p className="subtitle">Melde dich mit deiner FitZone-Zugangsdaten an.</p>
-      </header>
-      {fehler && (
-        <p className="mb-4 rounded-btn bg-red-50 px-3 py-2 text-sm text-red-700">
-          Anmeldung fehlgeschlagen. E-Mail oder Passwort prüfen.
-        </p>
-      )}
-      <form action={login} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
-          E-Mail
-          <input type="email" name="email" required autoComplete="email" className="input" />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
-          Passwort
-          <input
-            type="password"
-            name="password"
-            required
-            autoComplete="current-password"
-            className="input"
-          />
-        </label>
-        <button type="submit" className="btn btn-primary btn-block mt-1">
-          <LogIn /> Anmelden
-        </button>
-      </form>
+    <main className="page login">
+      {/* Branding – bewusst reduziert, klarer Fokus auf die Anmeldung */}
+      <div className="brandmark">
+        <span className="brand-logo" aria-hidden="true">
+          <Dumbbell />
+        </span>
+        <div>
+          <h1 className="page-title">FitZone</h1>
+          <p className="subtitle">Willkommen zurück – melde dich an.</p>
+        </div>
+      </div>
+
+      <LoginForm fehler={Boolean(fehler)} />
     </main>
   );
 }

@@ -531,6 +531,103 @@ textarea.input {
   }
 }
 
+/* ── Login-Screen (bewusst reduziert, vertikal zentriert) ─────────────── */
+.login {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+  /* keine Nav-FABs auf diesem Screen → normaler unterer Abstand statt 80px */
+  padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
+}
+.brandmark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+}
+.brand-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--color-brand-strong);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-brand);
+}
+.brand-logo svg {
+  width: 34px;
+  height: 34px;
+}
+
+/* Grüner, klar sichtbarer Fokus-Zustand für Eingabefelder */
+.input:focus-visible {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-surface-border);
+}
+
+/* Passwortfeld mit Sichtbarkeits-Umschalter (Auge) */
+.pw-wrap {
+  position: relative;
+}
+.pw-wrap .input {
+  padding-right: 48px; /* Platz für den Toggle-Button */
+}
+.pw-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  border-radius: var(--radius-btn);
+}
+.pw-toggle:hover {
+  color: var(--color-ink);
+}
+
+/* Freundliche Inline-Fehlermeldung am Formular */
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 14px;
+  border-radius: var(--radius-btn);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.login-error svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Dezente Shake-Animation bei Fehler (reduced-motion neutralisiert sie global) */
+.shake {
+  animation: shake 0.4s var(--ease);
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
 /* ── In-App-Video-Player (Modal, responsives 16:9) ────────────────────── */
 .player-overlay {
   position: fixed;

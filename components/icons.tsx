@@ -157,6 +157,18 @@ export const Home = (p: IconProps) => (
     <path d="M9 22V12h6v10" />
   </Svg>
 );
+export const Eye = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </Svg>
+);
+export const EyeOff = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M10.7 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a13.2 13.2 0 0 1-1.7 2.4M6.6 6.6A13.2 13.2 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20" />
+  </Svg>
+);
 export const ChevronLeft = (p: IconProps) => (
   <Svg {...p}>
     <path d="m15 18-6-6 6-6" />
