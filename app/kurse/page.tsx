@@ -67,6 +67,7 @@ export default async function KursePage({
       trainer: trainer.name,
       modus: kurstermin.modus,
       start: kurstermin.start,
+      dauerMinuten: kurstermin.dauerMinuten,
       kapazitaet: kurstermin.kapazitaet,
     })
     .from(kurstermin)
@@ -204,7 +205,8 @@ export default async function KursePage({
                   <span className="text-sm font-normal text-gray-500">· {t.modus}</span>
                 </div>
                 <div className="text-sm text-gray-500">
-                  {DATUM.format(t.start)} Uhr · {t.trainer} ·{" "}
+                  {DATUM.format(t.start)} Uhr
+                  {t.dauerMinuten != null && ` · ${t.dauerMinuten} Min`} · {t.trainer} ·{" "}
                   <span className={frei === 0 ? "text-amber-700" : ""}>
                     {frei} von {t.kapazitaet} frei
                   </span>

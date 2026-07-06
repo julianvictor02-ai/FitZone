@@ -4,6 +4,16 @@ import { db } from "@/lib/db";
 import { buchung, kurstermin, kurstyp, mitglied } from "@/lib/db/schema";
 import { AnwesenheitAktion } from "./AnwesenheitAktion";
 import { TrainerNotiz } from "./TrainerNotiz";
+import {
+  schlageKursVor,
+  aktivierePushTrainerAction,
+  deaktivierePushTrainerAction,
+  bearbeiteVorschlagAction,
+  zieheVorschlagZurueckAction,
+} from "./actions";
+import { KursVorschlagFormular } from "./KursVorschlagFormular";
+import { VorschlagBearbeiten } from "./VorschlagBearbeiten";
+import { PushEinstellung } from "@/components/PushEinstellung";
 import type { AnwesenheitWert } from "@/lib/attendance/anwesenheit";
 
 // FZ-005 — Trainer-Login: eigener Kursplan + Anwesenheit abhaken.
@@ -22,6 +32,7 @@ const DATUM = new Intl.DateTimeFormat("de-DE", {
 const STATUS_BADGE: Record<string, string> = {
   verschoben: "text-amber-700",
   geplant: "text-gray-500",
+  vorgeschlagen: "text-emerald-700",
 };
 
 export default async function TrainerPage() {
@@ -39,15 +50,30 @@ export default async function TrainerPage() {
   const trainerId = me.trainerId;
   const jetzt = new Date();
 
+  // Kursarten (inkl. Standard-Kapazitäten, FZ-021) für das Vorschlags-Formular (FZ-020).
+  const kurstypen = await db
+    .select({
+      id: kurstyp.kurstypId,
+      name: kurstyp.name,
+      studio: kurstyp.standardKapazitaetStudio,
+      livestream: kurstyp.standardKapazitaetLivestream,
+      dauer: kurstyp.standardDauerMinuten,
+    })
+    .from(kurstyp)
+    .orderBy(asc(kurstyp.name));
+
   // Nur eigene, nicht abgesagte Termine (§2b). Jüngste zuerst — frisch beendete
   // Kurse (Anwesenheit fällig) stehen oben.
   const termine = await db
     .select({
       kursterminId: kurstermin.kursterminId,
       kurstyp: kurstyp.name,
+      kurstypId: kurstermin.kurstypId,
       modus: kurstermin.modus,
       start: kurstermin.start,
+      dauerMinuten: kurstermin.dauerMinuten,
       kapazitaet: kurstermin.kapazitaet,
+      streamLink: kurstermin.streamLink,
       status: kurstermin.status,
     })
     .from(kurstermin)
@@ -91,6 +117,16 @@ export default async function TrainerPage() {
         Nur deine Kurse. Anwesenheit lässt sich ab Kursbeginn abhaken (FZ-005).
       </p>
 
+      {/* FZ-020/FZ-021 — Kurs vorschlagen (Kapazität aus Kurstyp-Standard vorbelegt). */}
+      <KursVorschlagFormular kurstypen={kurstypen} schlageVor={schlageKursVor} />
+
+      {/* FZ-022 — Push aktivieren, um Freigabe/Ablehnung eigener Vorschläge zu erhalten. */}
+      <PushEinstellung
+        vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null}
+        aktiviereAbo={aktivierePushTrainerAction}
+        deaktiviereAbo={deaktivierePushTrainerAction}
+      />
+
       <ul className="mt-6 space-y-6">
         {termine.map((t) => {
           const liste = byTermin.get(t.kursterminId) ?? [];
@@ -104,40 +140,64 @@ export default async function TrainerPage() {
                   {t.status === "verschoben" && (
                     <span className="ml-2 text-xs text-amber-700">(verschoben)</span>
                   )}
+                  {t.status === "vorgeschlagen" && (
+                    <span className="ml-2 text-xs text-emerald-700">(wartet auf Freigabe)</span>
+                  )}
                 </div>
                 <div className={`text-sm ${STATUS_BADGE[t.status] ?? "text-gray-500"}`}>
                   {DATUM.format(t.start)} Uhr
+                  {t.dauerMinuten != null && <span className="text-gray-400"> · {t.dauerMinuten} Min</span>}
                   {!erfassbar && <span className="ml-2 text-gray-400">· noch nicht begonnen</span>}
                 </div>
               </div>
 
-              <div className="mt-1 text-xs text-gray-500">
-                {liste.length} von {t.kapazitaet} Plätzen belegt
-              </div>
+              {t.status === "vorgeschlagen" ? (
+                /* FZ-026 — offenen Vorschlag bearbeiten oder zurückziehen. */
+                <VorschlagBearbeiten
+                  vorschlag={{
+                    kursterminId: t.kursterminId,
+                    kurstypId: t.kurstypId,
+                    modus: t.modus,
+                    start: t.start,
+                    dauerMinuten: t.dauerMinuten,
+                    kapazitaet: t.kapazitaet,
+                    streamLink: t.streamLink,
+                  }}
+                  kurstypen={kurstypen}
+                  bearbeiten={bearbeiteVorschlagAction}
+                  zurueckziehen={zieheVorschlagZurueckAction}
+                />
+              ) : (
+                <>
+                  <div className="mt-1 text-xs text-gray-500">
+                    {liste.length} von {t.kapazitaet} Plätzen belegt
+                  </div>
 
-              <ul className="mt-3 divide-y divide-gray-100">
-                {liste.map((tn) => (
-                  <li key={tn.mitgliedId} className="py-2">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="text-sm">{tn.name}</span>
-                      <AnwesenheitAktion
-                        kursterminId={t.kursterminId}
-                        mitgliedId={tn.mitgliedId}
-                        aktuell={tn.anwesenheit as AnwesenheitWert}
-                        erfassbar={erfassbar}
-                      />
-                    </div>
-                    <TrainerNotiz
-                      kursterminId={t.kursterminId}
-                      mitgliedId={tn.mitgliedId}
-                      notiz={tn.notiz}
-                    />
-                  </li>
-                ))}
-                {liste.length === 0 && (
-                  <li className="py-2 text-sm text-gray-500">Keine Teilnehmer.</li>
-                )}
-              </ul>
+                  <ul className="mt-3 divide-y divide-gray-100">
+                    {liste.map((tn) => (
+                      <li key={tn.mitgliedId} className="py-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <span className="text-sm">{tn.name}</span>
+                          <AnwesenheitAktion
+                            kursterminId={t.kursterminId}
+                            mitgliedId={tn.mitgliedId}
+                            aktuell={tn.anwesenheit as AnwesenheitWert}
+                            erfassbar={erfassbar}
+                          />
+                        </div>
+                        <TrainerNotiz
+                          kursterminId={t.kursterminId}
+                          mitgliedId={tn.mitgliedId}
+                          notiz={tn.notiz}
+                        />
+                      </li>
+                    ))}
+                    {liste.length === 0 && (
+                      <li className="py-2 text-sm text-gray-500">Keine Teilnehmer.</li>
+                    )}
+                  </ul>
+                </>
+              )}
             </li>
           );
         })}

@@ -31,6 +31,7 @@ export const kursterminStatus = pgEnum("kurstermin_status", [
   "geplant",
   "abgesagt",
   "verschoben",
+  "vorgeschlagen", // FZ-020: Trainer-Vorschlag, wartet auf Admin-Freigabe (dann → geplant)
 ]);
 export const buchungsstatus = pgEnum("buchungsstatus", ["bestaetigt", "storniert"]);
 export const anwesenheit = pgEnum("anwesenheit", [
@@ -81,6 +82,7 @@ export const kurstyp = pgTable("kurstyp", {
   name: kurstypName("name").notNull().unique(),
   standardKapazitaetStudio: integer("standard_kapazitaet_studio"),
   standardKapazitaetLivestream: integer("standard_kapazitaet_livestream"),
+  standardDauerMinuten: integer("standard_dauer_minuten"), // FZ-023: Vorbelegung Kursdauer
   // Einzelkurs-Preis je Kursart — Basis der Stornogebühr (FZ-016, 50 %). null = noch
   // nicht gepflegt → nur Gebühren-Flag, kein Betrag (spec §8 Frage 7/11).
   einzelpreis: numeric("einzelpreis", { precision: 10, scale: 2 }),
@@ -96,6 +98,7 @@ export const kurstermin = pgTable("kurstermin", {
     .references(() => trainer.trainerId),
   modus: modus("modus").notNull(),
   start: timestamp("start", { withTimezone: true }).notNull(),
+  dauerMinuten: integer("dauer_minuten"), // FZ-023: Kursdauer (für Ende/Kollisionsprüfung)
   kapazitaet: integer("kapazitaet").notNull(),
   status: kursterminStatus("status").notNull().default("geplant"),
   streamLink: text("stream_link"), // nur bei Livestream
@@ -180,9 +183,9 @@ export const wartelisteneintrag = pgTable(
 // Ein Mitglied kann mehrere Geräte/Browser haben (mehrere Zeilen).
 export const pushAbo = pgTable("push_abo", {
   aboId: uuid("abo_id").primaryKey().defaultRandom(),
-  mitgliedId: uuid("mitglied_id")
-    .notNull()
-    .references(() => mitglied.mitgliedId),
+  // Genau eins von mitgliedId/trainerId ist gesetzt (FZ-022: Push auch für Trainer).
+  mitgliedId: uuid("mitglied_id").references(() => mitglied.mitgliedId),
+  trainerId: uuid("trainer_id").references(() => trainer.trainerId),
   endpoint: text("endpoint").notNull().unique(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),

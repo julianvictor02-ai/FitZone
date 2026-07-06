@@ -36,6 +36,27 @@
       "when": 1783170492064,
       "tag": "0004_handy_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783328937532,
+      "tag": "0005_crazy_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783330208178,
+      "tag": "0006_sharp_wolfsbane",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783331458278,
+      "tag": "0007_typical_slyde",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,198 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-06 — FZ-025 + FZ-026: Kollision beim Verschieben + Trainer bearbeitet/zieht zurück
+
+**Kontext:** Zwei Konsequenzen aus FZ-020/FZ-024. (1) FZ-024 prüft Kollision **nur beim
+Vorschlagen** — der Admin-`Verschieben`-Pfad (FZ-009) setzte einen neuen Start ohne Prüfung
+und konnte damit genau die Überlappung erzeugen, die FZ-024 verhindert (selbst geöffnete
+Asymmetrie). (2) FZ-020 ließ nur den Admin ablehnen; ein Trainer konnte einen eigenen,
+vertippen Vorschlag weder korrigieren noch zurückziehen.
+
+### Entscheidung
+- **Overlap-Logik extrahiert** nach `lib/kurstermin/kollision.ts` (`findeTrainerKollision`,
+  `ende`, `FALLBACK_DAUER_MINUTEN`) mit optionalem `ausschlussId`. Genutzt von `vorschlag.ts`
+  (Anlegen/Bearbeiten) **und** `status.ts` (Verschieben) — eine Quelle der Wahrheit statt
+  duplizierter Prüfung.
+- **FZ-025:** `verschiebeKurstermin` prüft den neuen Slot gegen andere, nicht abgesagte
+  Termine des Trainers (den Termin selbst via `ausschlussId` ausgeklammert); neuer Status
+  `kollision`. Der Verschieben-Guard (`status = geplant`) und die Empfänger-Benachrichtigung
+  bleiben unverändert.
+- **FZ-026:** `bearbeiteVorschlag` und `zieheVorschlagZurueck` — beide erzwingen Besitz
+  (§2b) **und** Status `vorgeschlagen`; Bearbeiten läuft durch dieselbe Validierung
+  (extrahierter Helper `validiere`) + Kollision (Selbst ausgeklammert). UI-Komponente
+  `VorschlagBearbeiten.tsx` ersetzt für offene Vorschläge die (dort leere) Teilnehmerliste
+  im Trainer-Kursplan.
+
+### Alternativen verworfen
+- **Kollisionsprüfung dupliziert** in status.ts: die extrahierte Funktion vermeidet Drift
+  zwischen Anlegen und Verschieben.
+- **„Bearbeiten" als Zurückziehen + Neu-Anlegen** in der UI abbilden: verliert
+  Kurstermin-ID/Kontext; eine echte Update-Operation ist sauberer und nötig, sobald später
+  Buchungen an der ID hängen könnten.
+- **Zurückziehen als Status statt Löschen:** ein nie freigegebener Vorschlag ist kein
+  „Ausfall" (analog Ablehnen, FZ-020) → Löschen hält die Liste sauber.
+
+### Konsequenzen
+- Positiv: konsistente Kollisionsprüfung auf **beiden** Schreibpfaden; Trainer kann eigene
+  Vorschläge selbst pflegen. `verify:fz025` 6/6, `verify:fz026` 11/11; keine Regression
+  (fz009/020/023/024 grün, ein Refactor-Fehler beim Stream-Link-Verwerfen für Studio sofort
+  gefixt); `tsc` + `next build` grün.
+- Offen/Betrieb: Kein Schema-/Migrationsbedarf (reine Logik/UI). Admin-`Verschieben` bei
+  Kollision weiterhin ohne sichtbare Fehlermeldung (silent, konsistent mit den übrigen
+  Admin-Formularen) — bei Bedarf später Feedback via `useActionState`.
+
+---
+
+## 2026-07-06 — FZ-023 + FZ-024: Kursdauer + Trainer-Zeitkollision
+
+**Kontext:** `kurstermin` trug bisher nur `start`, kein Ende/Dauer — „Kursende" wurde überall
+als „Kursbeginn" gefaked (decisions FZ-004). Zudem konnte ein Trainer beim Vorschlagen
+(FZ-020) zwei zeitgleiche Kurse anlegen (keine Prüfung). Die Dauer ist die Voraussetzung für
+eine *echte* Überlappungsprüfung, daher beide zusammen.
+
+### Entscheidung — FZ-023 (Dauer)
+- **`kurstermin.dauer_minuten`** (nullable) + **`kurstyp.standard_dauer_minuten`** als
+  admin-gepflegte Vorbelegung (Migration `0007`). Nullable statt notNull, um Alt-/Seed-Daten
+  nicht rückwirkend befüllen zu müssen; für **neue** Vorschläge ist die Dauer aber Pflicht
+  (Engine-Validierung `ungueltige_eingabe: "dauer"`).
+- **Vorbelegung** im Trainer-Formular analog FZ-021 (Kapazität): Wechsel der Kursart setzt
+  Dauer aus dem Standard, überschreibbar. **Anzeige** in Kursliste + Trainer-Kursplan
+  (`· N Min`).
+- **Bewusst nicht** angefasst: die Anwesenheits-Zeitgrenze bleibt „ab Kursbeginn" (FZ-004) —
+  eine Umstellung auf „ab Kursende" wäre ein eigener Verhaltenswechsel, hier nicht nötig.
+
+### Entscheidung — FZ-024 (Kollision)
+- **Prüfung in `schlageKursterminVor`**: kein weiterer, nicht abgesagter Termin desselben
+  Trainers darf sich zeitlich überlappen. Überlappung `start < ende_other && start_other <
+  neuEnde` — **angrenzend** (Ende == Start) ist erlaubt; **abgesagte** Termine blockieren
+  nicht; **Alt-Termine ohne Dauer** nutzen eine Fallback-Dauer (60 Min), damit sie nicht
+  „unsichtbar" werden. Neuer Ergebnisstatus `kollision` (mit `mitKursterminId`).
+- **Ungelockt** (SELECT vor INSERT, keine Serialisierung): Vorschlagen ist eine
+  Einzelnutzer-Aktion — konsistent mit der Monatslimit-Entscheidung (FZ-010); kein
+  Überbuchungsrisiko wie bei der Termin-Kapazität (FZ-001).
+
+### Alternativen verworfen
+- **Dauer notNull mit Backfill:** unnötiger Zwang für Bestandsdaten; nullable + Pflicht im
+  Neu-Pfad genügt.
+- **Kollision in SQL mit `make_interval`:** die JS-Berechnung über die wenigen Trainer-Termine
+  ist klarer und ausreichend (kleine Datenmengen).
+- **Row-Lock des Trainers für exakte Atomarität:** überzogen für einen Near-Zero-Fall
+  (derselbe Trainer legt zeitgleich zwei überlappende Kurse an).
+- **Studio-Doppelbelegung mitprüfen:** es gibt keine Raum-/Ressourcen-Entität im Modell —
+  nur die Trainer-Zeit ist prüfbar. Bei Bedarf später Räume modellieren.
+
+### Konsequenzen
+- Positiv: Termine tragen jetzt eine Dauer (Ende ableitbar, sichtbar); ein Trainer kann sich
+  nicht mehr doppelt verplanen. `verify:fz023` 5/5, `verify:fz024` 6/6; keine Regression
+  (fz020 mit angepasster Testbasis grün); `tsc` + `next build` grün.
+- Offen/Betrieb: Migration `0007` je Umgebung anwenden (Live-DB erledigt). Anwesenheits-Timing
+  weiterhin an `start`. Keine Raum-Kollisionsprüfung (nur Trainer-Zeit).
+
+---
+
+## 2026-07-06 — FZ-021 + FZ-022: Standardkapazität-Vorbelegung + Trainer-Benachrichtigung
+
+**Kontext:** Zwei Anschluss-Verbesserungen an FZ-020. (1) Das `kurstyp`-Schema hatte die
+Spalten `standardKapazitaetStudio/Livestream` — bislang **ungenutzt** (offene Kundenfrage
+#5). (2) Der Trainer erfuhr die Freigabe/Ablehnung seines Vorschlags nur passiv (Badge im
+Kursplan); die Push-Infrastruktur (FZ-019) war **mitglied-gebunden**, Trainer haben kein
+`mitglied`.
+
+### Entscheidung — FZ-021 (Standardkapazität)
+- **Bestehende Spalten aktiviert** statt neuer Felder. Admin pflegt Studio-/Livestream-
+  Standard je Kursart in `app/admin/kurstypen` (`setzeStandardKapazitaet`; leer → null).
+- **Trainer-Formular wird Client-Komponente** (`app/trainer/KursVorschlagFormular.tsx`): bei
+  Wechsel von Kursart/Modus wird die Kapazität aus dem Standard **vorbelegt** (nur wenn einer
+  gepflegt ist), bleibt aber überschreibbar. Stream-Link erscheint nur bei Livestream. Die
+  Server-Action `schlageKursVor` wird als Prop übergeben (RSC → Client).
+
+### Entscheidung — FZ-022 (Trainer-Benachrichtigung)
+- **Push-Abo additiv erweitert** (Migration `0006`): `push_abo.trainer_id` (nullable),
+  `mitglied_id` **nullable** — ein Abo trägt entweder das eine oder das andere. Der
+  Mitglieds-Pfad bleibt **unverändert** (minimales Regressionsrisiko), statt push_abo auf
+  `benutzer_id` umzustellen (hätte Member-Flow + alle `benachrichtige`-Aufrufer berührt).
+- **Parallele Abo-Funktionen** (`*Trainer`) und `benachrichtigeTrainer` in `lib/notify.ts`;
+  die Sende-Schleife wurde in einen gemeinsamen Helper (`sendeAnAbos`) gezogen (DRY). Neue
+  Vorgänge `kurs_freigegeben`/`kurs_abgelehnt` (Deep-Link `/trainer`).
+- **Push-Toggle verallgemeinert:** die bisher member-spezifische `PushEinstellung` wandert
+  nach `components/PushEinstellung.tsx` und nimmt die Aktivieren/Deaktivieren-Actions als
+  **Props** — genutzt von Mitglied (Mein-Bereich) **und** Trainer. Zweiter echter Nutzer
+  rechtfertigt die Parametrisierung (keine gratuitöse Abstraktion).
+- **Versand nach Commit:** `gibKursterminFrei`/`lehneVorschlagAb` geben die `trainerId`
+  zurück; die Admin-Action benachrichtigt **nach** der Transaktion (kein Netz-I/O unter dem
+  Lock — konsistent mit FZ-009/FZ-019).
+
+### Alternativen verworfen
+- **Neue Kapazitäts-Felder** statt der vorhandenen Spalten: unnötig, Schema war schon da.
+- **push_abo auf `benutzer_id` generalisieren:** sauberer im Modell, aber Migration der
+  Bestands-Abos + Änderung aller `benachrichtige`-Aufrufer (FZ-002/008/009) → zu viel
+  Angriffsfläche für den Nutzen. Additiv ist surgical.
+- **Trainer-Benachrichtigung nur in-app** (Badge): Freigabe macht den Kurs „normal"
+  (Badge verschwindet), Ablehnung löscht ihn — kein verlässliches Outcome-Signal. Push
+  schließt den Loop real.
+- **PushEinstellung dupliziert** für den Trainer: ~100 Zeilen Browser-Logik doppelt →
+  stattdessen eine geteilte, parametrisierte Komponente.
+
+### Konsequenzen
+- Positiv: weniger Tipparbeit beim Anlegen (FZ-021); Trainer erfährt Freigabe/Ablehnung real
+  (FZ-022). `verify:fz022` 7/7 (Abo-Isolation + Trennung Trainer/Mitglied); keine Regression
+  (fz019/fz020 grün); `tsc` + `next build` grün. FZ-021 ist session-/UI-gebunden → über
+  Build/Browser geprüft (keine eigenständige Engine).
+- Offen/Betrieb: Migration `0006` je Umgebung anwenden (Live-DB erledigt). Realer
+  Push-Versand weiterhin browser-/VAPID-abhängig (iOS nur als installierte PWA). Kein
+  DB-CHECK, dass genau eins von mitglied_id/trainer_id gesetzt ist — per Code garantiert.
+
+---
+
+## 2026-07-06 — FZ-020: Kurstermin-Erstellung — Trainer schlägt vor, Admin gibt frei
+
+**Kontext:** Bislang konnte der Admin Kurstermine nur absagen/verschieben (FZ-009); es gab
+**kein** „Kurs anlegen" in der App — alle Termine stammten aus `scripts/seed.ts`. Erste
+Idee war ein reines Admin-Anlege-Formular; Kundenwunsch (Julian) korrigierte auf: **Trainer
+legt den Kurs an, Admin muss ihn nur freigeben** — so liegt die Erfassungsarbeit nicht beim
+Admin.
+
+### Entscheidung
+- **Neuer Status `vorgeschlagen`** im Enum `kurstermin_status` (Migration `drizzle/0005`,
+  per `ALTER TYPE … ADD VALUE` — direkt angewandt, da das Migrations-Journal der DB nicht
+  in Sync ist; die DB wurde per `db:push` aufgebaut, `db:migrate` würde bei 0 beginnen).
+- **Trainer-Erfassung** (`lib/kurstermin/vorschlag.ts` → `schlageKursterminVor`): Formular in
+  `app/trainer` (Action `schlageKursVor`). `trainer_id` kommt **aus der Session**, nicht aus
+  dem Formular — ein Trainer legt nur für sich selbst an (§2b). Validierung: Kurstyp/Trainer
+  gesetzt, Modus ∈ {Studio, Livestream}, Start in Zukunft, Kapazität > 0, Stream-Link bei
+  Livestream verpflichtend (bei Studio verworfen). Neuer Termin = Status `vorgeschlagen`.
+- **Admin-Freigabe** (`gibKursterminFrei`: `vorgeschlagen → geplant`, atomar mit `FOR UPDATE`)
+  bzw. **Ablehnen** (`lehneVorschlagAb`: löscht den Vorschlag — nie `geplant` gewesen, also
+  keine Buchungen/Warteliste, Löschen ist sicher). UI-Sektion „Freigabe ausstehend" in
+  `app/admin/kurstermine`.
+- **Kein zusätzliches Gating nötig:** `/kurse` und `bucheKurstermin`/`warteAufKurstermin`
+  filtern bereits strikt auf `status = "geplant"`. Ein `vorgeschlagen`-Termin ist damit für
+  Mitglieder **automatisch unsichtbar und unbuchbar**, bis der Admin ihn freigibt. Im
+  Trainer-Kursplan (`status != abgesagt`) erscheint er als „wartet auf Freigabe".
+
+### Alternativen verworfen
+- **Admin legt selbst an** (erste Idee): verlagert alle Erfassungsarbeit auf den Admin —
+  widerspricht dem Kundenwunsch. Der Vorschlag-/Freigabe-Fluss verteilt die Last.
+- **Ablehnen = Status `abgesagt`** statt Löschen: ein nie freigegebener Vorschlag ist kein
+  „Ausfall"; Löschen hält die Termin-Liste sauber (kein Nachweis-Bedarf, da nie gebucht).
+- **Serien-/Wiederholungstermine** gleich mitbauen: nicht angefordert (Simplicity) — ein
+  Termin pro Vorschlag.
+- **Neue Kurstypen/Trainer im Formular anlegen:** nur Auswahl aus Bestand (FK sichert
+  Existenz); Stammdaten bleiben Admin-Sache.
+
+### Konsequenzen
+- Positiv: Kurse können erstmals **in der App** entstehen; Arbeitsteilung Trainer→Admin;
+  verifiziert (`verify:fz020`, 19/19: Vorschlag, Unsichtbarkeit/Unbuchbarkeit vor Freigabe,
+  Trainer-Kursplan, Freigabe→buchbar, Doppel-Freigabe, Livestream-Link-Pflicht,
+  Validierung, Ablehnen/Löschen); keine Regression (fz001/fz009 grün); `tsc` grün.
+- Offen/Betrieb: Migration 0005 muss auf jeder Umgebung angewandt werden (auf der
+  Live-DB bereits geschehen). Sichtbarkeit weiterhin app-seitig (kein RLS, projektweit).
+  Ein freigegebener Termin durchläuft danach den normalen FZ-009-Lebenszyklus
+  (verschieben/absagen).
+
+---
+
 ## 2026-07-04 — PWA + Deployment (Vercel) für „aufs iPhone"
 
 **Kontext:** FitZone soll aufs iPhone. Es ist eine Web-App (kein App Store); der Weg ist

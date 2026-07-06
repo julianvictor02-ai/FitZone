@@ -2,7 +2,7 @@ import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { buchung, kurstermin, kurstyp, trainer, wartelisteneintrag } from "@/lib/db/schema";
 import { requireRolle } from "@/lib/auth/benutzer";
-import { sageAb, verschiebe } from "./actions";
+import { sageAb, verschiebe, gibFrei, lehneAb } from "./actions";
 
 // FZ-009 — Admin-Terminverwaltung: Absagen/Verschieben mit Auto-Benachrichtigung (BR8).
 
@@ -50,6 +50,22 @@ export default async function KurstermineAdminPage() {
     )
     .orderBy(asc(kurstermin.start));
 
+  // FZ-020 — offene Trainer-Vorschläge (warten auf Freigabe).
+  const vorschlaege = await db
+    .select({
+      kursterminId: kurstermin.kursterminId,
+      kurstyp: kurstyp.name,
+      trainer: trainer.name,
+      modus: kurstermin.modus,
+      start: kurstermin.start,
+      kapazitaet: kurstermin.kapazitaet,
+    })
+    .from(kurstermin)
+    .innerJoin(kurstyp, eq(kurstermin.kurstypId, kurstyp.kurstypId))
+    .innerJoin(trainer, eq(kurstermin.trainerId, trainer.trainerId))
+    .where(eq(kurstermin.status, "vorgeschlagen"))
+    .orderBy(asc(kurstermin.start));
+
   const ids = termine.map((t) => t.kursterminId);
 
   // Betroffene je Termin: bestätigte Buchungen + aktive Warteliste (= Empfänger BR8).
@@ -84,7 +100,52 @@ export default async function KurstermineAdminPage() {
         automatisch benachrichtigt (FZ-009, BR8).
       </p>
 
-      <ul className="mt-8 space-y-3">
+      {/* FZ-020 — Trainer-Vorschläge freigeben (dann für Mitglieder buchbar) oder ablehnen. */}
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-ink">Freigabe ausstehend</h2>
+        <p className="mt-1 text-sm text-muted">
+          Von Trainern vorgeschlagene Kurse. Nach Freigabe erscheinen sie in der Kursliste
+          der Mitglieder (FZ-020).
+        </p>
+        <ul className="mt-4 space-y-3">
+          {vorschlaege.map((v) => (
+            <li
+              key={v.kursterminId}
+              className="rounded-card border border-emerald-200 bg-emerald-50/40 p-4"
+            >
+              <div className="font-medium text-ink">
+                {v.kurstyp}{" "}
+                <span className="text-sm font-normal text-muted">· {v.modus}</span>
+              </div>
+              <div className="text-sm text-muted">
+                {DATUM.format(v.start)} Uhr · {v.trainer} · {v.kapazitaet} Plätze
+              </div>
+              <div className="mt-3 flex gap-3">
+                <form action={gibFrei} className="flex-1">
+                  <input type="hidden" name="kursterminId" value={v.kursterminId} />
+                  <button type="submit" className="btn btn-primary btn-block">
+                    Freigeben
+                  </button>
+                </form>
+                <form action={lehneAb} className="flex-1">
+                  <input type="hidden" name="kursterminId" value={v.kursterminId} />
+                  <button type="submit" className="btn btn-outline btn-block">
+                    Ablehnen
+                  </button>
+                </form>
+              </div>
+            </li>
+          ))}
+          {vorschlaege.length === 0 && (
+            <li className="rounded-card border border-gray-200 p-4 text-sm text-muted">
+              Keine offenen Vorschläge.
+            </li>
+          )}
+        </ul>
+      </section>
+
+      <h2 className="mt-10 text-lg font-semibold text-ink">Anstehende Termine</h2>
+      <ul className="mt-4 space-y-3">
         {termine.map((t) => {
           const gebucht = belegungMap.get(t.kursterminId) ?? 0;
           const wl = wlMap.get(t.kursterminId) ?? 0;
