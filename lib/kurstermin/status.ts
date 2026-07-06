@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { buchung, kurstermin, wartelisteneintrag } from "@/lib/db/schema";
 import { benachrichtige } from "@/lib/notify";
+import { findeTrainerKollision } from "./kollision";
 
 // FZ-009 — Auto-Benachrichtigung bei Kursausfall/-verschiebung (BR8).
 // Ein Statuswechsel auf `abgesagt`/`verschoben` benachrichtigt alle Betroffenen:
@@ -18,7 +19,8 @@ export type StatusErgebnis =
   | { status: "geaendert"; benachrichtigt: string[] }
   | { status: "nicht_gefunden" }
   | { status: "uebergang_unzulaessig"; von: string }
-  | { status: "ungueltiger_start" };
+  | { status: "ungueltiger_start" }
+  | { status: "kollision"; mitKursterminId: string }; // FZ-025: neuer Slot überlappt Trainer-Kurs
 
 // Alle betroffenen Mitglieder eines Termins (bestätigte Buchung ODER aktive
 // Warteliste), ohne Duplikate.
@@ -93,7 +95,11 @@ export async function verschiebeKurstermin(
 
   const { ergebnis, empfaenger } = await db.transaction(async (tx) => {
     const [termin] = await tx
-      .select({ status: kurstermin.status })
+      .select({
+        status: kurstermin.status,
+        trainerId: kurstermin.trainerId,
+        dauerMinuten: kurstermin.dauerMinuten,
+      })
       .from(kurstermin)
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
@@ -103,6 +109,18 @@ export async function verschiebeKurstermin(
         ergebnis: { status: "uebergang_unzulaessig" as const, von: termin.status },
         empfaenger: [],
       };
+    }
+
+    // FZ-025 — der neue Slot darf nicht mit einem anderen Kurs des Trainers überlappen
+    // (den Termin selbst ausgeklammert). Konsistent mit der Prüfung beim Vorschlagen (FZ-024).
+    const konflikt = await findeTrainerKollision(
+      termin.trainerId,
+      neuerStart,
+      termin.dauerMinuten,
+      kursterminId,
+    );
+    if (konflikt) {
+      return { ergebnis: { status: "kollision" as const, mitKursterminId: konflikt }, empfaenger: [] };
     }
 
     const empfaenger = await betroffeneMitglieder(tx, kursterminId);

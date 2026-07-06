@@ -5,6 +5,49 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-06 — FZ-025 + FZ-026: Kollision beim Verschieben + Trainer bearbeitet/zieht zurück
+
+**Kontext:** Zwei Konsequenzen aus FZ-020/FZ-024. (1) FZ-024 prüft Kollision **nur beim
+Vorschlagen** — der Admin-`Verschieben`-Pfad (FZ-009) setzte einen neuen Start ohne Prüfung
+und konnte damit genau die Überlappung erzeugen, die FZ-024 verhindert (selbst geöffnete
+Asymmetrie). (2) FZ-020 ließ nur den Admin ablehnen; ein Trainer konnte einen eigenen,
+vertippen Vorschlag weder korrigieren noch zurückziehen.
+
+### Entscheidung
+- **Overlap-Logik extrahiert** nach `lib/kurstermin/kollision.ts` (`findeTrainerKollision`,
+  `ende`, `FALLBACK_DAUER_MINUTEN`) mit optionalem `ausschlussId`. Genutzt von `vorschlag.ts`
+  (Anlegen/Bearbeiten) **und** `status.ts` (Verschieben) — eine Quelle der Wahrheit statt
+  duplizierter Prüfung.
+- **FZ-025:** `verschiebeKurstermin` prüft den neuen Slot gegen andere, nicht abgesagte
+  Termine des Trainers (den Termin selbst via `ausschlussId` ausgeklammert); neuer Status
+  `kollision`. Der Verschieben-Guard (`status = geplant`) und die Empfänger-Benachrichtigung
+  bleiben unverändert.
+- **FZ-026:** `bearbeiteVorschlag` und `zieheVorschlagZurueck` — beide erzwingen Besitz
+  (§2b) **und** Status `vorgeschlagen`; Bearbeiten läuft durch dieselbe Validierung
+  (extrahierter Helper `validiere`) + Kollision (Selbst ausgeklammert). UI-Komponente
+  `VorschlagBearbeiten.tsx` ersetzt für offene Vorschläge die (dort leere) Teilnehmerliste
+  im Trainer-Kursplan.
+
+### Alternativen verworfen
+- **Kollisionsprüfung dupliziert** in status.ts: die extrahierte Funktion vermeidet Drift
+  zwischen Anlegen und Verschieben.
+- **„Bearbeiten" als Zurückziehen + Neu-Anlegen** in der UI abbilden: verliert
+  Kurstermin-ID/Kontext; eine echte Update-Operation ist sauberer und nötig, sobald später
+  Buchungen an der ID hängen könnten.
+- **Zurückziehen als Status statt Löschen:** ein nie freigegebener Vorschlag ist kein
+  „Ausfall" (analog Ablehnen, FZ-020) → Löschen hält die Liste sauber.
+
+### Konsequenzen
+- Positiv: konsistente Kollisionsprüfung auf **beiden** Schreibpfaden; Trainer kann eigene
+  Vorschläge selbst pflegen. `verify:fz025` 6/6, `verify:fz026` 11/11; keine Regression
+  (fz009/020/023/024 grün, ein Refactor-Fehler beim Stream-Link-Verwerfen für Studio sofort
+  gefixt); `tsc` + `next build` grün.
+- Offen/Betrieb: Kein Schema-/Migrationsbedarf (reine Logik/UI). Admin-`Verschieben` bei
+  Kollision weiterhin ohne sichtbare Fehlermeldung (silent, konsistent mit den übrigen
+  Admin-Formularen) — bei Bedarf später Feedback via `useActionState`.
+
+---
+
 ## 2026-07-06 — FZ-023 + FZ-024: Kursdauer + Trainer-Zeitkollision
 
 **Kontext:** `kurstermin` trug bisher nur `start`, kein Ende/Dauer — „Kursende" wurde überall

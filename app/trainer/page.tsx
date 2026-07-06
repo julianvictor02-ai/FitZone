@@ -4,8 +4,15 @@ import { db } from "@/lib/db";
 import { buchung, kurstermin, kurstyp, mitglied } from "@/lib/db/schema";
 import { AnwesenheitAktion } from "./AnwesenheitAktion";
 import { TrainerNotiz } from "./TrainerNotiz";
-import { schlageKursVor, aktivierePushTrainerAction, deaktivierePushTrainerAction } from "./actions";
+import {
+  schlageKursVor,
+  aktivierePushTrainerAction,
+  deaktivierePushTrainerAction,
+  bearbeiteVorschlagAction,
+  zieheVorschlagZurueckAction,
+} from "./actions";
 import { KursVorschlagFormular } from "./KursVorschlagFormular";
+import { VorschlagBearbeiten } from "./VorschlagBearbeiten";
 import { PushEinstellung } from "@/components/PushEinstellung";
 import type { AnwesenheitWert } from "@/lib/attendance/anwesenheit";
 
@@ -61,10 +68,12 @@ export default async function TrainerPage() {
     .select({
       kursterminId: kurstermin.kursterminId,
       kurstyp: kurstyp.name,
+      kurstypId: kurstermin.kurstypId,
       modus: kurstermin.modus,
       start: kurstermin.start,
       dauerMinuten: kurstermin.dauerMinuten,
       kapazitaet: kurstermin.kapazitaet,
+      streamLink: kurstermin.streamLink,
       status: kurstermin.status,
     })
     .from(kurstermin)
@@ -142,33 +151,53 @@ export default async function TrainerPage() {
                 </div>
               </div>
 
-              <div className="mt-1 text-xs text-gray-500">
-                {liste.length} von {t.kapazitaet} Plätzen belegt
-              </div>
+              {t.status === "vorgeschlagen" ? (
+                /* FZ-026 — offenen Vorschlag bearbeiten oder zurückziehen. */
+                <VorschlagBearbeiten
+                  vorschlag={{
+                    kursterminId: t.kursterminId,
+                    kurstypId: t.kurstypId,
+                    modus: t.modus,
+                    start: t.start,
+                    dauerMinuten: t.dauerMinuten,
+                    kapazitaet: t.kapazitaet,
+                    streamLink: t.streamLink,
+                  }}
+                  kurstypen={kurstypen}
+                  bearbeiten={bearbeiteVorschlagAction}
+                  zurueckziehen={zieheVorschlagZurueckAction}
+                />
+              ) : (
+                <>
+                  <div className="mt-1 text-xs text-gray-500">
+                    {liste.length} von {t.kapazitaet} Plätzen belegt
+                  </div>
 
-              <ul className="mt-3 divide-y divide-gray-100">
-                {liste.map((tn) => (
-                  <li key={tn.mitgliedId} className="py-2">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="text-sm">{tn.name}</span>
-                      <AnwesenheitAktion
-                        kursterminId={t.kursterminId}
-                        mitgliedId={tn.mitgliedId}
-                        aktuell={tn.anwesenheit as AnwesenheitWert}
-                        erfassbar={erfassbar}
-                      />
-                    </div>
-                    <TrainerNotiz
-                      kursterminId={t.kursterminId}
-                      mitgliedId={tn.mitgliedId}
-                      notiz={tn.notiz}
-                    />
-                  </li>
-                ))}
-                {liste.length === 0 && (
-                  <li className="py-2 text-sm text-gray-500">Keine Teilnehmer.</li>
-                )}
-              </ul>
+                  <ul className="mt-3 divide-y divide-gray-100">
+                    {liste.map((tn) => (
+                      <li key={tn.mitgliedId} className="py-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <span className="text-sm">{tn.name}</span>
+                          <AnwesenheitAktion
+                            kursterminId={t.kursterminId}
+                            mitgliedId={tn.mitgliedId}
+                            aktuell={tn.anwesenheit as AnwesenheitWert}
+                            erfassbar={erfassbar}
+                          />
+                        </div>
+                        <TrainerNotiz
+                          kursterminId={t.kursterminId}
+                          mitgliedId={tn.mitgliedId}
+                          notiz={tn.notiz}
+                        />
+                      </li>
+                    ))}
+                    {liste.length === 0 && (
+                      <li className="py-2 text-sm text-gray-500">Keine Teilnehmer.</li>
+                    )}
+                  </ul>
+                </>
+              )}
             </li>
           );
         })}

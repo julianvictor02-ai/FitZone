@@ -1,11 +1,7 @@
-import { and, eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { kurstermin } from "@/lib/db/schema";
-
-// FZ-024 — Fallback-Dauer für die Kollisionsprüfung, wenn ein bestehender Termin (z. B.
-// Seed-Daten) noch keine Dauer trägt. Verhindert, dass ein Termin ohne Dauer „unsichtbar"
-// für die Überlappung wird.
-const FALLBACK_DAUER_MINUTEN = 60;
+import { findeTrainerKollision } from "./kollision";
 
 // FZ-020 — Kurstermin-Vorschlag: der Trainer legt einen Kurs an (Status `vorgeschlagen`),
 // der Admin gibt ihn frei (→ `geplant`) oder lehnt ihn ab (löscht den Vorschlag). Erst nach
@@ -36,43 +32,43 @@ export type FreigabeErgebnis =
   | { status: "nicht_gefunden" }
   | { status: "nicht_vorgeschlagen"; von: string };
 
+// Felder eines Vorschlags (ohne Trainer). Basis für Anlegen und Bearbeiten.
+export type VorschlagFelder = Omit<VorschlagEingabe, "trainerId">;
+
+// Prüft die Eingabefelder; liefert das erste ungültige Feld oder den normalisierten
+// Stream-Link (Studio → null). Gemeinsam für Anlegen (FZ-020) und Bearbeiten (FZ-026).
+function validiere(
+  eingabe: VorschlagFelder,
+  jetzt: Date,
+): { feld: string } | { ok: true; streamLink: string | null } {
+  const { kurstypId, modus, start, dauerMinuten, kapazitaet } = eingabe;
+  if (!kurstypId) return { feld: "kurstyp" };
+  if (modus !== "Studio" && modus !== "Livestream") return { feld: "modus" };
+  if (!(start instanceof Date) || isNaN(start.getTime()) || start <= jetzt) return { feld: "start" };
+  if (!Number.isInteger(dauerMinuten) || dauerMinuten <= 0) return { feld: "dauer" };
+  if (!Number.isInteger(kapazitaet) || kapazitaet <= 0) return { feld: "kapazitaet" };
+  // Stream-Link nur bei Livestream — dort verpflichtend, bei Studio verworfen (null).
+  const streamLinkRaw = eingabe.streamLink?.trim() || null;
+  if (modus === "Livestream" && !streamLinkRaw) return { feld: "streamLink" };
+  return { ok: true, streamLink: modus === "Livestream" ? streamLinkRaw : null };
+}
+
 // Trainer schlägt einen Kurstermin vor. `trainerId` kommt aus der Session (die Action),
 // nicht aus dem Formular — ein Trainer kann nur für sich selbst anlegen (§2b).
 export async function schlageKursterminVor(
   eingabe: VorschlagEingabe,
   jetzt: Date = new Date(),
 ): Promise<VorschlagErgebnis> {
-  const { trainerId, kurstypId, modus, start, kapazitaet } = eingabe;
+  const { trainerId, kurstypId, modus, start, dauerMinuten, kapazitaet } = eingabe;
 
   if (!trainerId) return { status: "ungueltige_eingabe", feld: "trainer" };
-  if (!kurstypId) return { status: "ungueltige_eingabe", feld: "kurstyp" };
-  if (modus !== "Studio" && modus !== "Livestream")
-    return { status: "ungueltige_eingabe", feld: "modus" };
-  if (!(start instanceof Date) || isNaN(start.getTime()) || start <= jetzt)
-    return { status: "ungueltige_eingabe", feld: "start" };
-  const { dauerMinuten } = eingabe;
-  if (!Number.isInteger(dauerMinuten) || dauerMinuten <= 0)
-    return { status: "ungueltige_eingabe", feld: "dauer" };
-  if (!Number.isInteger(kapazitaet) || kapazitaet <= 0)
-    return { status: "ungueltige_eingabe", feld: "kapazitaet" };
+  const v = validiere(eingabe, jetzt);
+  if ("feld" in v) return { status: "ungueltige_eingabe", feld: v.feld };
 
-  // Stream-Link nur bei Livestream — dort verpflichtend, bei Studio verworfen.
-  const streamLink = eingabe.streamLink?.trim() || null;
-  if (modus === "Livestream" && !streamLink)
-    return { status: "ungueltige_eingabe", feld: "streamLink" };
-
-  // FZ-024 — Zeitkollision: der Trainer darf nicht zeitgleich einen weiteren (nicht
-  // abgesagten) Kurs haben. Überlappung [start, ende) — Fallback-Dauer für Alt-Termine
-  // ohne Dauer. Einzelnutzer-Aktion → ungelockt (analog Monatslimit FZ-010).
-  const ende = (s: Date, d: number | null) =>
-    new Date(s.getTime() + (d ?? FALLBACK_DAUER_MINUTEN) * 60_000);
-  const neuEnde = ende(start, dauerMinuten);
-  const bestehende = await db
-    .select({ id: kurstermin.kursterminId, start: kurstermin.start, dauer: kurstermin.dauerMinuten })
-    .from(kurstermin)
-    .where(and(eq(kurstermin.trainerId, trainerId), ne(kurstermin.status, "abgesagt")));
-  const konflikt = bestehende.find((e) => start < ende(e.start, e.dauer) && e.start < neuEnde);
-  if (konflikt) return { status: "kollision", mitKursterminId: konflikt.id };
+  // FZ-024 — Zeitkollision: der Trainer darf nicht zeitgleich einen weiteren, nicht
+  // abgesagten Kurs haben.
+  const konflikt = await findeTrainerKollision(trainerId, start, dauerMinuten);
+  if (konflikt) return { status: "kollision", mitKursterminId: konflikt };
 
   const [kt] = await db
     .insert(kurstermin)
@@ -83,7 +79,7 @@ export async function schlageKursterminVor(
       start,
       dauerMinuten,
       kapazitaet,
-      streamLink: modus === "Livestream" ? streamLink : null,
+      streamLink: v.streamLink,
       status: "vorgeschlagen",
     })
     .returning({ kursterminId: kurstermin.kursterminId });
@@ -125,5 +121,81 @@ export async function lehneVorschlagAb(kursterminId: string): Promise<FreigabeEr
 
     await tx.delete(kurstermin).where(eq(kurstermin.kursterminId, kursterminId));
     return { status: "abgelehnt", trainerId: t.trainerId };
+  });
+}
+
+// FZ-026 — Ergebnis für Bearbeiten/Zurückziehen eines eigenen Vorschlags durch den Trainer.
+export type EigenerVorschlagErgebnis =
+  | { status: "aktualisiert" }
+  | { status: "zurueckgezogen" }
+  | { status: "ungueltige_eingabe"; feld: string }
+  | { status: "kollision"; mitKursterminId: string }
+  | { status: "nicht_gefunden" }
+  | { status: "nicht_dein_vorschlag" }
+  | { status: "nicht_vorgeschlagen"; von: string };
+
+// FZ-026 — Trainer bearbeitet einen eigenen, noch nicht freigegebenen Vorschlag. Nur der
+// besitzende Trainer (§2b) und nur im Status `vorgeschlagen`. Validierung + Kollision (den
+// Termin selbst ausgeklammert) wie beim Anlegen.
+export async function bearbeiteVorschlag(
+  trainerId: string,
+  kursterminId: string,
+  felder: VorschlagFelder,
+  jetzt: Date = new Date(),
+): Promise<EigenerVorschlagErgebnis> {
+  const v = validiere(felder, jetzt);
+  if ("feld" in v) return { status: "ungueltige_eingabe", feld: v.feld };
+
+  return db.transaction(async (tx) => {
+    const [t] = await tx
+      .select({ status: kurstermin.status, trainerId: kurstermin.trainerId })
+      .from(kurstermin)
+      .where(eq(kurstermin.kursterminId, kursterminId))
+      .for("update");
+    if (!t) return { status: "nicht_gefunden" };
+    if (t.trainerId !== trainerId) return { status: "nicht_dein_vorschlag" };
+    if (t.status !== "vorgeschlagen") return { status: "nicht_vorgeschlagen", von: t.status };
+
+    const konflikt = await findeTrainerKollision(
+      trainerId,
+      felder.start,
+      felder.dauerMinuten,
+      kursterminId,
+    );
+    if (konflikt) return { status: "kollision", mitKursterminId: konflikt };
+
+    await tx
+      .update(kurstermin)
+      .set({
+        kurstypId: felder.kurstypId,
+        modus: felder.modus,
+        start: felder.start,
+        dauerMinuten: felder.dauerMinuten,
+        kapazitaet: felder.kapazitaet,
+        streamLink: v.streamLink,
+      })
+      .where(eq(kurstermin.kursterminId, kursterminId));
+    return { status: "aktualisiert" };
+  });
+}
+
+// FZ-026 — Trainer zieht einen eigenen Vorschlag zurück (löscht ihn). Nur der besitzende
+// Trainer und nur im Status `vorgeschlagen` (nie freigegeben → keine Buchungen).
+export async function zieheVorschlagZurueck(
+  trainerId: string,
+  kursterminId: string,
+): Promise<EigenerVorschlagErgebnis> {
+  return db.transaction(async (tx) => {
+    const [t] = await tx
+      .select({ status: kurstermin.status, trainerId: kurstermin.trainerId })
+      .from(kurstermin)
+      .where(eq(kurstermin.kursterminId, kursterminId))
+      .for("update");
+    if (!t) return { status: "nicht_gefunden" };
+    if (t.trainerId !== trainerId) return { status: "nicht_dein_vorschlag" };
+    if (t.status !== "vorgeschlagen") return { status: "nicht_vorgeschlagen", von: t.status };
+
+    await tx.delete(kurstermin).where(eq(kurstermin.kursterminId, kursterminId));
+    return { status: "zurueckgezogen" };
   });
 }

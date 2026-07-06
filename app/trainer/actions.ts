@@ -8,7 +8,11 @@ import {
   type AnwesenheitErgebnis,
 } from "@/lib/attendance/anwesenheit";
 import { setzeTrainerNotiz, type NotizErgebnis } from "@/lib/trainer/notiz";
-import { schlageKursterminVor } from "@/lib/kurstermin/vorschlag";
+import {
+  schlageKursterminVor,
+  bearbeiteVorschlag,
+  zieheVorschlagZurueck,
+} from "@/lib/kurstermin/vorschlag";
 import {
   speicherePushAboTrainer,
   entfernePushAboTrainer,
@@ -75,6 +79,39 @@ export async function schlageKursVor(formData: FormData) {
     kapazitaet: Number.parseInt(kapazitaetRaw, 10),
     streamLink,
   });
+  revalidatePath("/trainer");
+}
+
+// FZ-026 — Trainer bearbeitet einen eigenen, noch nicht freigegebenen Vorschlag.
+export async function bearbeiteVorschlagAction(formData: FormData) {
+  const b = await getBenutzer();
+  if (!b || b.rolle !== "trainer" || !b.trainerId) return;
+
+  const kursterminId = String(formData.get("kursterminId") ?? "");
+  if (!kursterminId) return;
+  const modus = String(formData.get("modus") ?? "") as "Studio" | "Livestream";
+  const startRaw = String(formData.get("start") ?? "").trim();
+
+  await bearbeiteVorschlag(b.trainerId, kursterminId, {
+    kurstypId: String(formData.get("kurstypId") ?? ""),
+    modus,
+    start: startRaw ? new Date(startRaw) : new Date(NaN),
+    dauerMinuten: Number.parseInt(String(formData.get("dauerMinuten") ?? ""), 10),
+    kapazitaet: Number.parseInt(String(formData.get("kapazitaet") ?? ""), 10),
+    streamLink: String(formData.get("streamLink") ?? "").trim(),
+  });
+  revalidatePath("/trainer");
+}
+
+// FZ-026 — Trainer zieht einen eigenen Vorschlag zurück (löscht ihn).
+export async function zieheVorschlagZurueckAction(formData: FormData) {
+  const b = await getBenutzer();
+  if (!b || b.rolle !== "trainer" || !b.trainerId) return;
+
+  const kursterminId = String(formData.get("kursterminId") ?? "");
+  if (!kursterminId) return;
+
+  await zieheVorschlagZurueck(b.trainerId, kursterminId);
   revalidatePath("/trainer");
 }
 
