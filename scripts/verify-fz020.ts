@@ -33,11 +33,14 @@ async function main() {
 
   const ktIds: string[] = [];
   const inStunden = (h: number) => new Date(Date.now() + h * 3_600_000);
+  let stundenOffset = 48;
   const basis = () => ({
     trainerId: tr.trainerId,
     kurstypId: kYoga.kurstypId,
     modus: "Studio" as const,
-    start: inStunden(48),
+    // Jeder Aufruf ein anderer Slot → keine ungewollte Kollision (FZ-024) in fz020.
+    start: inStunden((stundenOffset += 3)),
+    dauerMinuten: 60,
     kapazitaet: 10,
   });
   async function statusVon(id: string) {

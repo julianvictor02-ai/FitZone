@@ -6,7 +6,13 @@ import { useState } from "react";
 // Kursart/Modus aus dem Kurstyp-Standard (FZ-021, admin-gepflegt) vorbelegt — überschreibbar.
 // Der Stream-Link erscheint nur bei Livestream (dort Pflicht).
 
-type Kurstyp = { id: string; name: string; studio: number | null; livestream: number | null };
+type Kurstyp = {
+  id: string;
+  name: string;
+  studio: number | null;
+  livestream: number | null;
+  dauer: number | null;
+};
 type Modus = "Studio" | "Livestream";
 
 export function KursVorschlagFormular({
@@ -21,17 +27,25 @@ export function KursVorschlagFormular({
     return m === "Studio" ? (kt?.studio ?? null) : (kt?.livestream ?? null);
   };
 
+  const dauerVon = (id: string): number | null => kurstypen.find((k) => k.id === id)?.dauer ?? null;
+
   const [kurstypId, setKurstypId] = useState(kurstypen[0]?.id ?? "");
   const [modus, setModus] = useState<Modus>("Studio");
   const [kapazitaet, setKapazitaet] = useState(() => {
     const std = standard(kurstypen[0]?.id ?? "", "Studio");
     return std != null ? String(std) : "";
   });
+  const [dauer, setDauer] = useState(() => {
+    const std = dauerVon(kurstypen[0]?.id ?? "");
+    return std != null ? String(std) : "";
+  });
 
-  // Kapazität aus dem Standard vorbelegen (nur wenn einer hinterlegt ist).
+  // Kapazität + Dauer aus dem Kurstyp-Standard vorbelegen (nur wenn hinterlegt).
   function vorbelegen(id: string, m: Modus) {
     const std = standard(id, m);
     if (std != null) setKapazitaet(String(std));
+    const dStd = dauerVon(id);
+    if (dStd != null) setDauer(String(dStd));
   }
 
   const aktuellerStandard = standard(kurstypId, modus);
@@ -88,6 +102,19 @@ export function KursVorschlagFormular({
       <label className="flex flex-col gap-1 text-sm text-muted">
         Start
         <input type="datetime-local" name="start" required className="input" />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm text-muted">
+        Dauer (Minuten)
+        <input
+          type="number"
+          name="dauerMinuten"
+          min={1}
+          required
+          value={dauer}
+          onChange={(e) => setDauer(e.target.value)}
+          className="input"
+        />
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-muted">

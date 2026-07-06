@@ -48,6 +48,7 @@ export async function setzeStandardKapazitaet(formData: FormData) {
     .set({
       standardKapazitaetStudio: zahl("studio"),
       standardKapazitaetLivestream: zahl("livestream"),
+      standardDauerMinuten: zahl("dauer"),
     })
     .where(eq(kurstyp.kurstypId, kurstypId));
   revalidatePath("/admin/kurstypen");

@@ -28,7 +28,9 @@
     "verify:fz018": "tsx scripts/verify-fz018.ts",
     "verify:fz019": "tsx scripts/verify-fz019.ts",
     "verify:fz020": "tsx scripts/verify-fz020.ts",
-    "verify:fz022": "tsx scripts/verify-fz022.ts"
+    "verify:fz022": "tsx scripts/verify-fz022.ts",
+    "verify:fz023": "tsx scripts/verify-fz023.ts",
+    "verify:fz024": "tsx scripts/verify-fz024.ts"
   },
   "dependencies": {
     "next": "^15.1.4",

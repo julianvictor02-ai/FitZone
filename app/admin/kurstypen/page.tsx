@@ -19,6 +19,7 @@ export default async function KurstypenPage() {
       einzelpreis: kurstyp.einzelpreis,
       standardStudio: kurstyp.standardKapazitaetStudio,
       standardLivestream: kurstyp.standardKapazitaetLivestream,
+      standardDauer: kurstyp.standardDauerMinuten,
     })
     .from(kurstyp)
     .orderBy(asc(kurstyp.name));
@@ -86,6 +87,16 @@ export default async function KurstypenPage() {
                       name="livestream"
                       min="1"
                       defaultValue={t.standardLivestream ?? ""}
+                      className="input"
+                    />
+                  </label>
+                  <label className="flex flex-1 flex-col gap-1 text-sm text-muted">
+                    Dauer (Min)
+                    <input
+                      type="number"
+                      name="dauer"
+                      min="1"
+                      defaultValue={t.standardDauer ?? ""}
                       className="input"
                     />
                   </label>

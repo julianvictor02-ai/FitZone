@@ -62,6 +62,7 @@ export async function schlageKursVor(formData: FormData) {
   const kurstypId = String(formData.get("kurstypId") ?? "");
   const modus = String(formData.get("modus") ?? "") as "Studio" | "Livestream";
   const startRaw = String(formData.get("start") ?? "").trim();
+  const dauerRaw = String(formData.get("dauerMinuten") ?? "").trim();
   const kapazitaetRaw = String(formData.get("kapazitaet") ?? "").trim();
   const streamLink = String(formData.get("streamLink") ?? "").trim();
 
@@ -70,6 +71,7 @@ export async function schlageKursVor(formData: FormData) {
     kurstypId,
     modus,
     start: startRaw ? new Date(startRaw) : new Date(NaN),
+    dauerMinuten: Number.parseInt(dauerRaw, 10),
     kapazitaet: Number.parseInt(kapazitaetRaw, 10),
     streamLink,
   });

@@ -5,6 +5,53 @@ Format je Eintrag: Kontext → Entscheidung → verworfene Alternativen → Kons
 
 ---
 
+## 2026-07-06 — FZ-023 + FZ-024: Kursdauer + Trainer-Zeitkollision
+
+**Kontext:** `kurstermin` trug bisher nur `start`, kein Ende/Dauer — „Kursende" wurde überall
+als „Kursbeginn" gefaked (decisions FZ-004). Zudem konnte ein Trainer beim Vorschlagen
+(FZ-020) zwei zeitgleiche Kurse anlegen (keine Prüfung). Die Dauer ist die Voraussetzung für
+eine *echte* Überlappungsprüfung, daher beide zusammen.
+
+### Entscheidung — FZ-023 (Dauer)
+- **`kurstermin.dauer_minuten`** (nullable) + **`kurstyp.standard_dauer_minuten`** als
+  admin-gepflegte Vorbelegung (Migration `0007`). Nullable statt notNull, um Alt-/Seed-Daten
+  nicht rückwirkend befüllen zu müssen; für **neue** Vorschläge ist die Dauer aber Pflicht
+  (Engine-Validierung `ungueltige_eingabe: "dauer"`).
+- **Vorbelegung** im Trainer-Formular analog FZ-021 (Kapazität): Wechsel der Kursart setzt
+  Dauer aus dem Standard, überschreibbar. **Anzeige** in Kursliste + Trainer-Kursplan
+  (`· N Min`).
+- **Bewusst nicht** angefasst: die Anwesenheits-Zeitgrenze bleibt „ab Kursbeginn" (FZ-004) —
+  eine Umstellung auf „ab Kursende" wäre ein eigener Verhaltenswechsel, hier nicht nötig.
+
+### Entscheidung — FZ-024 (Kollision)
+- **Prüfung in `schlageKursterminVor`**: kein weiterer, nicht abgesagter Termin desselben
+  Trainers darf sich zeitlich überlappen. Überlappung `start < ende_other && start_other <
+  neuEnde` — **angrenzend** (Ende == Start) ist erlaubt; **abgesagte** Termine blockieren
+  nicht; **Alt-Termine ohne Dauer** nutzen eine Fallback-Dauer (60 Min), damit sie nicht
+  „unsichtbar" werden. Neuer Ergebnisstatus `kollision` (mit `mitKursterminId`).
+- **Ungelockt** (SELECT vor INSERT, keine Serialisierung): Vorschlagen ist eine
+  Einzelnutzer-Aktion — konsistent mit der Monatslimit-Entscheidung (FZ-010); kein
+  Überbuchungsrisiko wie bei der Termin-Kapazität (FZ-001).
+
+### Alternativen verworfen
+- **Dauer notNull mit Backfill:** unnötiger Zwang für Bestandsdaten; nullable + Pflicht im
+  Neu-Pfad genügt.
+- **Kollision in SQL mit `make_interval`:** die JS-Berechnung über die wenigen Trainer-Termine
+  ist klarer und ausreichend (kleine Datenmengen).
+- **Row-Lock des Trainers für exakte Atomarität:** überzogen für einen Near-Zero-Fall
+  (derselbe Trainer legt zeitgleich zwei überlappende Kurse an).
+- **Studio-Doppelbelegung mitprüfen:** es gibt keine Raum-/Ressourcen-Entität im Modell —
+  nur die Trainer-Zeit ist prüfbar. Bei Bedarf später Räume modellieren.
+
+### Konsequenzen
+- Positiv: Termine tragen jetzt eine Dauer (Ende ableitbar, sichtbar); ein Trainer kann sich
+  nicht mehr doppelt verplanen. `verify:fz023` 5/5, `verify:fz024` 6/6; keine Regression
+  (fz020 mit angepasster Testbasis grün); `tsc` + `next build` grün.
+- Offen/Betrieb: Migration `0007` je Umgebung anwenden (Live-DB erledigt). Anwesenheits-Timing
+  weiterhin an `start`. Keine Raum-Kollisionsprüfung (nur Trainer-Zeit).
+
+---
+
 ## 2026-07-06 — FZ-021 + FZ-022: Standardkapazität-Vorbelegung + Trainer-Benachrichtigung
 
 **Kontext:** Zwei Anschluss-Verbesserungen an FZ-020. (1) Das `kurstyp`-Schema hatte die

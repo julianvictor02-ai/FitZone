@@ -50,6 +50,7 @@ export default async function TrainerPage() {
       name: kurstyp.name,
       studio: kurstyp.standardKapazitaetStudio,
       livestream: kurstyp.standardKapazitaetLivestream,
+      dauer: kurstyp.standardDauerMinuten,
     })
     .from(kurstyp)
     .orderBy(asc(kurstyp.name));
@@ -62,6 +63,7 @@ export default async function TrainerPage() {
       kurstyp: kurstyp.name,
       modus: kurstermin.modus,
       start: kurstermin.start,
+      dauerMinuten: kurstermin.dauerMinuten,
       kapazitaet: kurstermin.kapazitaet,
       status: kurstermin.status,
     })
@@ -135,6 +137,7 @@ export default async function TrainerPage() {
                 </div>
                 <div className={`text-sm ${STATUS_BADGE[t.status] ?? "text-gray-500"}`}>
                   {DATUM.format(t.start)} Uhr
+                  {t.dauerMinuten != null && <span className="text-gray-400"> · {t.dauerMinuten} Min</span>}
                   {!erfassbar && <span className="ml-2 text-gray-400">· noch nicht begonnen</span>}
                 </div>
               </div>

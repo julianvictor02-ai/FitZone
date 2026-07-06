@@ -1,6 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { kurstermin } from "@/lib/db/schema";
+
+// FZ-024 — Fallback-Dauer für die Kollisionsprüfung, wenn ein bestehender Termin (z. B.
+// Seed-Daten) noch keine Dauer trägt. Verhindert, dass ein Termin ohne Dauer „unsichtbar"
+// für die Überlappung wird.
+const FALLBACK_DAUER_MINUTEN = 60;
 
 // FZ-020 — Kurstermin-Vorschlag: der Trainer legt einen Kurs an (Status `vorgeschlagen`),
 // der Admin gibt ihn frei (→ `geplant`) oder lehnt ihn ab (löscht den Vorschlag). Erst nach
@@ -15,13 +20,15 @@ export type VorschlagEingabe = {
   kurstypId: string;
   modus: Modus;
   start: Date;
+  dauerMinuten: number;
   kapazitaet: number;
   streamLink?: string | null;
 };
 
 export type VorschlagErgebnis =
   | { status: "vorgeschlagen"; kursterminId: string }
-  | { status: "ungueltige_eingabe"; feld: string };
+  | { status: "ungueltige_eingabe"; feld: string }
+  | { status: "kollision"; mitKursterminId: string }; // Trainer hat zeitgleich schon einen Kurs
 
 export type FreigabeErgebnis =
   | { status: "freigegeben"; trainerId: string }
@@ -43,6 +50,9 @@ export async function schlageKursterminVor(
     return { status: "ungueltige_eingabe", feld: "modus" };
   if (!(start instanceof Date) || isNaN(start.getTime()) || start <= jetzt)
     return { status: "ungueltige_eingabe", feld: "start" };
+  const { dauerMinuten } = eingabe;
+  if (!Number.isInteger(dauerMinuten) || dauerMinuten <= 0)
+    return { status: "ungueltige_eingabe", feld: "dauer" };
   if (!Number.isInteger(kapazitaet) || kapazitaet <= 0)
     return { status: "ungueltige_eingabe", feld: "kapazitaet" };
 
@@ -51,6 +61,19 @@ export async function schlageKursterminVor(
   if (modus === "Livestream" && !streamLink)
     return { status: "ungueltige_eingabe", feld: "streamLink" };
 
+  // FZ-024 — Zeitkollision: der Trainer darf nicht zeitgleich einen weiteren (nicht
+  // abgesagten) Kurs haben. Überlappung [start, ende) — Fallback-Dauer für Alt-Termine
+  // ohne Dauer. Einzelnutzer-Aktion → ungelockt (analog Monatslimit FZ-010).
+  const ende = (s: Date, d: number | null) =>
+    new Date(s.getTime() + (d ?? FALLBACK_DAUER_MINUTEN) * 60_000);
+  const neuEnde = ende(start, dauerMinuten);
+  const bestehende = await db
+    .select({ id: kurstermin.kursterminId, start: kurstermin.start, dauer: kurstermin.dauerMinuten })
+    .from(kurstermin)
+    .where(and(eq(kurstermin.trainerId, trainerId), ne(kurstermin.status, "abgesagt")));
+  const konflikt = bestehende.find((e) => start < ende(e.start, e.dauer) && e.start < neuEnde);
+  if (konflikt) return { status: "kollision", mitKursterminId: konflikt.id };
+
   const [kt] = await db
     .insert(kurstermin)
     .values({
@@ -58,6 +81,7 @@ export async function schlageKursterminVor(
       trainerId,
       modus,
       start,
+      dauerMinuten,
       kapazitaet,
       streamLink: modus === "Livestream" ? streamLink : null,
       status: "vorgeschlagen",

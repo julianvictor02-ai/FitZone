@@ -82,6 +82,7 @@ export const kurstyp = pgTable("kurstyp", {
   name: kurstypName("name").notNull().unique(),
   standardKapazitaetStudio: integer("standard_kapazitaet_studio"),
   standardKapazitaetLivestream: integer("standard_kapazitaet_livestream"),
+  standardDauerMinuten: integer("standard_dauer_minuten"), // FZ-023: Vorbelegung Kursdauer
   // Einzelkurs-Preis je Kursart — Basis der Stornogebühr (FZ-016, 50 %). null = noch
   // nicht gepflegt → nur Gebühren-Flag, kein Betrag (spec §8 Frage 7/11).
   einzelpreis: numeric("einzelpreis", { precision: 10, scale: 2 }),
@@ -97,6 +98,7 @@ export const kurstermin = pgTable("kurstermin", {
     .references(() => trainer.trainerId),
   modus: modus("modus").notNull(),
   start: timestamp("start", { withTimezone: true }).notNull(),
+  dauerMinuten: integer("dauer_minuten"), // FZ-023: Kursdauer (für Ende/Kollisionsprüfung)
   kapazitaet: integer("kapazitaet").notNull(),
   status: kursterminStatus("status").notNull().default("geplant"),
   streamLink: text("stream_link"), // nur bei Livestream

@@ -50,6 +50,13 @@
       "when": 1783330208178,
       "tag": "0006_sharp_wolfsbane",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783331458278,
+      "tag": "0007_typical_slyde",
+      "breakpoints": true
     }
   ]
 }
