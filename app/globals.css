@@ -202,6 +202,10 @@ textarea.input {
   transition: background-color var(--dur) ease, transform var(--dur) var(--ease),
     box-shadow var(--dur) ease;
 }
+.nav-fab svg {
+  width: 24px;
+  height: 24px;
+}
 .nav-fab-left {
   left: var(--space-4);
 }

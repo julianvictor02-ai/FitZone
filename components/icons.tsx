@@ -151,6 +151,17 @@ export const CreditCard = (p: IconProps) => (
     <path d="M2 10h20" />
   </Svg>
 );
+export const Home = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <path d="M9 22V12h6v10" />
+  </Svg>
+);
+export const ChevronLeft = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m15 18-6-6 6-6" />
+  </Svg>
+);
 export const ClipboardList = (p: IconProps) => (
   <Svg {...p}>
     <rect x="8" y="2" width="8" height="4" rx="1" />
