@@ -160,6 +160,23 @@ async function main() {
     ]);
   }
 
+  // FZ-011 — echtes YouTube-On-Demand-Video (In-App-Player, ab Plus). Idempotent
+  // per video_id, damit es auch in bereits befüllten DBs ergänzt wird.
+  const YT_ID = "TCtxV8Driso";
+  const [ytVorhanden] = await db
+    .select({ id: onDemandVideo.videoId })
+    .from(onDemandVideo)
+    .where(and(eq(onDemandVideo.plattform, "YouTube"), eq(onDemandVideo.url, YT_ID)));
+  if (!ytVorhanden) {
+    await db.insert(onDemandVideo).values({
+      titel: "Lach-Yoga für Einsteiger",
+      kurstypId: kYoga.kurstypId,
+      mindestTarif: "Plus",
+      plattform: "YouTube",
+      url: YT_ID,
+    });
+  }
+
   const anzahlTermine = (
     await db
       .select({ id: kurstermin.kursterminId })
