@@ -628,6 +628,131 @@ textarea.input {
   80% { transform: translateX(2px); }
 }
 
+/* ── CSS-3D-Baum als Passwort-Feedback ────────────────────────────────── */
+.baum-buehne {
+  perspective: 700px; /* 3D-Tiefe für die Kinder */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.baum {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  transform-style: preserve-3d;
+  transform: rotateX(10deg); /* leichte Neigung → räumliche Anmutung */
+  transition: transform 0.3s var(--ease), filter 0.3s ease;
+  /* Krone-Farbstufen als Variablen → Zustände recolorieren nur diese */
+  --k1: #bbf7d0;
+  --k2: #4ade80;
+  --k3: #16a34a;
+  --k4: #14532d;
+  --glow: transparent;
+}
+/* Kugelige Baumkronen: Licht oben-links, Schatten unten-rechts + Inset-Volumen */
+.baum-krone {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--k1) 0%, var(--k2) 40%, var(--k3) 72%, var(--k4) 100%);
+  box-shadow:
+    inset -6px -8px 14px rgb(0 0 0 / 0.35),
+    inset 6px 6px 12px rgb(255 255 255 / 0.35),
+    0 10px 18px rgb(20 83 45 / 0.28);
+}
+.baum-krone-1 { width: 78px; height: 78px; left: 27px; top: 4px; z-index: 3; }
+.baum-krone-2 { width: 58px; height: 58px; left: 6px; top: 34px; z-index: 2; }
+.baum-krone-3 { width: 58px; height: 58px; right: 6px; top: 34px; z-index: 2; }
+/* Stamm mit seitlichem Licht/Schatten für Rundung */
+.baum-stamm {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 46px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #a16207 0%, #854d0e 48%, #713f12 100%);
+  box-shadow:
+    inset -3px 0 5px rgb(0 0 0 / 0.4),
+    inset 3px 0 4px rgb(255 255 255 / 0.18),
+    0 6px 10px rgb(0 0 0 / 0.25);
+  z-index: 1;
+}
+/* Bodenschatten → Erdung/Tiefe */
+.baum-boden {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.22), transparent 70%);
+  z-index: 0;
+}
+/* Farbiger Glow-Ring hinter dem Baum (pulst bei Zustandswechsel) */
+.baum-glow {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 44%, var(--glow), transparent 62%);
+}
+
+/* Zustände */
+.baum-pending { filter: saturate(0.75) brightness(0.97); }
+.baum-ok {
+  --k1: #bbf7d0; --k2: #4ade80; --k3: #16a34a; --k4: #166534;
+  --glow: rgb(34 197 94 / 0.85);
+  animation: baum-puls 0.7s var(--ease);
+}
+.baum-fehler {
+  --k1: #fecaca; --k2: #f87171; --k3: #dc2626; --k4: #7f1d1d;
+  --glow: rgb(220 38 38 / 0.9);
+  animation: baum-puls-fehler 0.6s var(--ease);
+}
+.baum-ok .baum-glow,
+.baum-fehler .baum-glow {
+  animation: baum-glow 0.7s var(--ease) forwards;
+}
+@keyframes baum-puls {
+  0% { transform: rotateX(10deg) scale(1); }
+  35% { transform: rotateX(3deg) rotateY(-8deg) scale(1.08); }
+  100% { transform: rotateX(10deg) scale(1); }
+}
+@keyframes baum-puls-fehler {
+  0% { transform: rotateX(10deg) translateX(0); }
+  25% { transform: rotateX(6deg) rotateY(9deg) translateX(-5px); }
+  55% { transform: rotateX(6deg) rotateY(-9deg) translateX(5px); }
+  80% { transform: rotateX(8deg) translateX(-2px); }
+  100% { transform: rotateX(10deg) translateX(0); }
+}
+@keyframes baum-glow {
+  0% { opacity: 0; }
+  40% { opacity: 1; }
+  100% { opacity: 0.28; }
+}
+
+/* Zustands-Text (nicht nur Farbe → Barrierefreiheit); feste Höhe = kein Layout-Sprung */
+.baum-status {
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.baum-txt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.baum-txt svg { width: 17px; height: 17px; }
+.baum-txt-ok { color: var(--color-brand-strong); }
+.baum-txt-fehler { color: #b91c1c; }
+
 /* ── In-App-Video-Player (Modal, responsives 16:9) ────────────────────── */
 .player-overlay {
   position: fixed;
