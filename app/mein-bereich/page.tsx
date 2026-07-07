@@ -2,6 +2,7 @@ import Link from "next/link";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { requireRolle } from "@/lib/auth/benutzer";
 import { PushEinstellung } from "@/components/PushEinstellung";
+import { FristCountdown } from "@/components/FristCountdown";
 import { aktivierePushAction, deaktivierePushAction } from "./actions";
 import { db } from "@/lib/db";
 import {
@@ -96,6 +97,7 @@ export default async function MeinBereichPage() {
       stornozeitpunkt: buchung.stornozeitpunkt,
       gebuehr: buchung.stornoGebuehrFaellig,
       betrag: buchung.stornoGebuehrBetrag,
+      gebuehrEntscheidung: buchung.stornoGebuehrEntscheidung,
     })
     .from(buchung)
     .innerJoin(kurstermin, eq(buchung.kursterminId, kurstermin.kursterminId))
@@ -229,9 +231,10 @@ export default async function MeinBereichPage() {
                   </div>
                   {w.status === "benachrichtigt" && w.fristBis && (
                     <p className="hinweis hinweis-ok mt-3">
-                      <CheckCircle /> Bitte bis{" "}
+                      <CheckCircle /> Bitte bestätigen (
+                      <FristCountdown bisISO={w.fristBis.toISOString()} />, bis{" "}
                       {w.fristBis.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}{" "}
-                      unter &bdquo;Kurse&ldquo; bestätigen.
+                      Uhr) unter &bdquo;Kurse&ldquo;.
                     </p>
                   )}
                 </li>
@@ -296,7 +299,9 @@ export default async function MeinBereichPage() {
                     {storniert && b.stornozeitpunkt &&
                       ` · storniert am ${DATUM_ZEIT.format(b.stornozeitpunkt)} Uhr`}
                     {storniert && b.gebuehr &&
-                      ` · Stornogebühr fällig${b.betrag != null ? ` (${EUR.format(Number(b.betrag))})` : ""}`}
+                      (b.gebuehrEntscheidung === "erlassen"
+                        ? " · Stornogebühr erlassen"
+                        : ` · Stornogebühr fällig${b.betrag != null ? ` (${EUR.format(Number(b.betrag))})` : ""}`)}
                   </div>
                 </li>
               );
