@@ -32,6 +32,18 @@ export const Dumbbell = (p: IconProps) => (
     <path d="M18 9v6M20 10.5v3" />
   </Svg>
 );
+export const Euro = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M14.5 5.5a5.5 5.5 0 1 0 0 13" />
+    <path d="M4 10h7M4 14h7" />
+  </Svg>
+);
+export const Info = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 16v-4M12 8h.01" />
+  </Svg>
+);
 export const Flame = (p: IconProps) => (
   <Svg {...p}>
     <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" />

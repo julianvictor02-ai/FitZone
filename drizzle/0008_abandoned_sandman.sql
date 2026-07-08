@@ -1,0 +1,2 @@
+CREATE TYPE "public"."storno_gebuehr_entscheidung" AS ENUM('erlassen', 'bestaetigt');--> statement-breakpoint
+ALTER TABLE "buchung" ADD COLUMN "storno_gebuehr_entscheidung" "storno_gebuehr_entscheidung";

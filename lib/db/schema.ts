@@ -40,6 +40,12 @@ export const anwesenheit = pgEnum("anwesenheit", [
   "no_show",
   "entschuldigt",
 ]);
+// Admin-Entscheidung über eine fällige Stornogebühr (FZ-016+). null = noch offen
+// (Admin muss entscheiden); Abwicklung/Abbuchung bleibt manuell außerhalb (kein Payment v1).
+export const stornoGebuehrEntscheidung = pgEnum("storno_gebuehr_entscheidung", [
+  "erlassen",
+  "bestaetigt",
+]);
 export const wartelisteStatus = pgEnum("warteliste_status", [
   "wartend",
   "benachrichtigt",
@@ -138,6 +144,8 @@ export const buchung = pgTable(
     anwesenheitErfasstAm: timestamp("anwesenheit_erfasst_am", { withTimezone: true }),
     stornoGebuehrFaellig: boolean("storno_gebuehr_faellig").notNull().default(false),
     stornoGebuehrBetrag: numeric("storno_gebuehr_betrag", { precision: 10, scale: 2 }),
+    // Admin-Entscheidung zur fälligen Gebühr: null = offen, sonst erlassen/bestaetigt.
+    stornoGebuehrEntscheidung: stornoGebuehrEntscheidung("storno_gebuehr_entscheidung"),
     trainerNotiz: text("trainer_notiz"),
   },
   // Partieller Unique-Index: max. EINE aktive (bestaetigt) Buchung pro Mitglied+Termin.

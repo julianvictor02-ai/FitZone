@@ -114,17 +114,9 @@ export default async function TrainerPage() {
         </p>
       </header>
 
-      {/* FZ-020/FZ-021 — Kurs vorschlagen (Kapazität aus Kurstyp-Standard vorbelegt). */}
-      <KursVorschlagFormular kurstypen={kurstypen} schlageVor={schlageKursVor} />
-
-      {/* FZ-022 — Push aktivieren, um Freigabe/Ablehnung eigener Vorschläge zu erhalten. */}
-      <PushEinstellung
-        vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null}
-        aktiviereAbo={aktivierePushTrainerAction}
-        deaktiviereAbo={deaktivierePushTrainerAction}
-      />
-
-      <ul className="mt-6 space-y-6">
+      {/* Primär: der eigene Kursplan mit Teilnehmerliste, Anwesenheit und Notiz. */}
+      <h2 className="section-title">Meine Kurstermine</h2>
+      <ul className="mt-3 space-y-6">
         {termine.map((t) => {
           const liste = byTermin.get(t.kursterminId) ?? [];
           const erfassbar = t.start <= jetzt;
@@ -206,6 +198,21 @@ export default async function TrainerPage() {
           <li className="text-sm text-gray-500">Keine eigenen Kurstermine.</li>
         )}
       </ul>
+
+      {/* Sekundär: Kurs vorschlagen und Benachrichtigungen — klar vom Kursplan getrennt. */}
+      <section className="section">
+        <h2 className="section-title">Weitere Aktionen</h2>
+
+        {/* FZ-020/FZ-021 — Kurs vorschlagen (Kapazität aus Kurstyp-Standard vorbelegt). */}
+        <KursVorschlagFormular kurstypen={kurstypen} schlageVor={schlageKursVor} />
+
+        {/* FZ-022 — Push aktivieren, um Freigabe/Ablehnung eigener Vorschläge zu erhalten. */}
+        <PushEinstellung
+          vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null}
+          aktiviereAbo={aktivierePushTrainerAction}
+          deaktiviereAbo={deaktivierePushTrainerAction}
+        />
+      </section>
     </main>
   );
 }

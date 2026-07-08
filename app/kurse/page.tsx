@@ -12,10 +12,14 @@ import {
   wartelisteneintrag,
 } from "@/lib/db/schema";
 import { MAX_WARTELISTE } from "@/lib/booking/warteliste";
-import { stornoGebuehrFaellig } from "@/lib/booking/storno";
+import {
+  stornoGebuehrFaellig,
+  berechneStornoGebuehr,
+  STORNO_FRIST_STUNDEN,
+} from "@/lib/booking/storno";
 import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 import { KursterminAktion, type Zustand } from "./KursterminAktion";
-import { kursIcon, Users, XCircle, Compass } from "@/components/icons";
+import { kursIcon, Users, XCircle, Compass, Info } from "@/components/icons";
 
 const DATUM = new Intl.DateTimeFormat("de-DE", {
   weekday: "short",
@@ -24,6 +28,8 @@ const DATUM = new Intl.DateTimeFormat("de-DE", {
   hour: "2-digit",
   minute: "2-digit",
 });
+const MONAT_LANG = new Intl.DateTimeFormat("de-DE", { month: "long" });
+const UHRZEIT = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit" });
 
 export default async function KursePage({
   searchParams,
@@ -43,14 +49,20 @@ export default async function KursePage({
   }
   const mitgliedId = me.mitgliedId;
 
-  // Tarif-Befreiung für den Stornogebühr-Hinweis (BR5).
+  // Tarif-Info: Stornogebühr-Befreiung (BR5), Livestream-Zugriff (BR7) und Monatslimit
+  // (BR4) — Letzteres, um das verbleibende Buchungskontingent VOR der Buchung zu zeigen.
   const [tarifInfo] = await db
-    .select({ befreit: tarif.stornoGebuehrBefreit, livestream: tarif.livestreamZugriff })
+    .select({
+      befreit: tarif.stornoGebuehrBefreit,
+      livestream: tarif.livestreamZugriff,
+      limit: tarif.buchungslimitProMonat,
+    })
     .from(mitglied)
     .innerJoin(tarif, eq(mitglied.tarifId, tarif.tarifId))
     .where(eq(mitglied.mitgliedId, mitgliedId));
   const stornoBefreit = tarifInfo?.befreit ?? false;
   const livestreamErlaubt = darfLivestreamBuchen(tarifInfo?.livestream ?? null);
+  const monatslimit = tarifInfo?.limit ?? null; // null = unbegrenzt (Plus/Premium)
 
   const { modus } = await searchParams;
   const modusFilter = modus === "Studio" || modus === "Livestream" ? modus : null;
@@ -70,6 +82,7 @@ export default async function KursePage({
       start: kurstermin.start,
       dauerMinuten: kurstermin.dauerMinuten,
       kapazitaet: kurstermin.kapazitaet,
+      einzelpreis: kurstyp.einzelpreis,
     })
     .from(kurstermin)
     .innerJoin(kurstyp, eq(kurstermin.kurstypId, kurstyp.kurstypId))
@@ -101,6 +114,28 @@ export default async function KursePage({
         )
     : [];
   const gebuchtSet = new Set(meineBuchungen.map((m) => m.kursterminId));
+
+  // Buchungskontingent (BR4): bestätigte Buchungen je Kalendermonat (nach Kurs-Datum).
+  // Nur für Tarife mit Limit (Basic) — zeigt das verbleibende Kontingent VOR der Buchung
+  // und sperrt den Buchen-Button, wenn der Monat voll ist. Gesamtzahl je Mitglied ist
+  // klein → im Speicher zählen statt SQL-Gruppierung.
+  const monatKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
+  const monatsBelegung = new Map<string, number>();
+  if (monatslimit != null) {
+    const rows = await db
+      .select({ start: kurstermin.start })
+      .from(buchung)
+      .innerJoin(kurstermin, eq(buchung.kursterminId, kurstermin.kursterminId))
+      .where(
+        and(eq(buchung.mitgliedId, mitgliedId), eq(buchung.buchungsstatus, "bestaetigt")),
+      );
+    for (const r of rows) {
+      const k = monatKey(r.start);
+      monatsBelegung.set(k, (monatsBelegung.get(k) ?? 0) + 1);
+    }
+  }
+  const restImMonat = (start: Date) =>
+    monatslimit != null ? Math.max(0, monatslimit - (monatsBelegung.get(monatKey(start)) ?? 0)) : null;
 
   // Aktive Warteliste (FIFO nach zeitstempel) für alle gelisteten Termine.
   const wlAktiv = ids.length
@@ -141,6 +176,18 @@ export default async function KursePage({
           werden nur freie Plätze als Zahl gezeigt — keine Namen.
         </p>
       </header>
+
+      {/* Buchungskontingent (BR4): bei Tarifen mit Monatslimit das Restkontingent des
+          laufenden Monats vorab sichtbar machen — nicht erst als Fehler nach der Buchung. */}
+      {monatslimit != null && (
+        <p className="hinweis mb-4">
+          <Info />
+          Noch <strong className="text-ink">
+            {Math.max(0, monatslimit - (monatsBelegung.get(monatKey(new Date())) ?? 0))}
+          </strong>{" "}
+          von {monatslimit} Buchungen im {MONAT_LANG.format(new Date())} übrig.
+        </p>
+      )}
 
       <nav className="mb-5 flex gap-2">
         {[
@@ -195,6 +242,22 @@ export default async function KursePage({
             zustand = "livestream_gesperrt";
           }
 
+          // Storno-Frist (BR5): kostenlos stornierbar bis STORNO_FRIST_STUNDEN vor Start.
+          const stornoFristBis = new Date(
+            t.start.getTime() - STORNO_FRIST_STUNDEN * 3_600_000,
+          );
+          // Potenzieller Gebührenbetrag (50 % Einzelpreis), sofern Preis gepflegt ist.
+          const gebuehrBetrag = berechneStornoGebuehr(
+            t.einzelpreis != null ? Number(t.einzelpreis) : null,
+            true,
+          );
+          // Buchen sperren, wenn das Monatskontingent (BR4) für DIESEN Kursmonat erschöpft ist.
+          const rest = restImMonat(t.start);
+          const buchenGesperrtGrund =
+            zustand === "buchbar" && rest != null && rest <= 0
+              ? `Kontingent erschöpft — ${monatslimit} Buchungen im ${MONAT_LANG.format(t.start)} erreicht`
+              : undefined;
+
           const KursIcon = kursIcon(t.kurstyp);
           return (
             <li key={t.kursterminId} className="card">
@@ -241,6 +304,10 @@ export default async function KursePage({
                       ? stornoGebuehrFaellig(t.start, stornoBefreit)
                       : undefined
                   }
+                  stornoBefreit={stornoBefreit}
+                  stornoFristUhrzeit={UHRZEIT.format(stornoFristBis)}
+                  stornoGebuehrBetrag={gebuehrBetrag}
+                  buchenGesperrtGrund={buchenGesperrtGrund}
                 />
               </div>
             </li>
