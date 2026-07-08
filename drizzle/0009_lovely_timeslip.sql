@@ -1,0 +1,1 @@
+ALTER TYPE "public"."mitglied_status" ADD VALUE 'geloescht';
