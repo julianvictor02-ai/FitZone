@@ -1,13 +1,14 @@
-import { asc } from "drizzle-orm";
+import { asc, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { mitglied, tarif } from "@/lib/db/schema";
+import { benutzer, mitglied, tarif } from "@/lib/db/schema";
 import { requireRolle } from "@/lib/auth/benutzer";
+import { Info } from "@/components/icons";
 import { erstelleMitglied, aktualisiereMitglied } from "./actions";
 
 export default async function MitgliederPage() {
   await requireRolle("admin");
 
-  const [mitglieder, tarife] = await Promise.all([
+  const [mitglieder, tarife, aktivierte] = await Promise.all([
     db
       .select({
         mitgliedId: mitglied.mitgliedId,
@@ -20,7 +21,13 @@ export default async function MitgliederPage() {
       .from(mitglied)
       .orderBy(asc(mitglied.name)),
     db.select().from(tarif).orderBy(asc(tarif.name)),
+    // Aktiviert = es existiert eine benutzer-Verknüpfung (Auth-Konto) zum Mitglied.
+    db
+      .select({ mitgliedId: benutzer.mitgliedId })
+      .from(benutzer)
+      .where(isNotNull(benutzer.mitgliedId)),
   ]);
+  const aktiviertSet = new Set(aktivierte.map((a) => a.mitgliedId));
 
   return (
     <main className="page">
@@ -60,6 +67,10 @@ export default async function MitgliederPage() {
           <button type="submit" className="btn btn-primary btn-block">
             Anlegen
           </button>
+          <p className="hinweis">
+            <Info /> Neu angelegte Mitglieder müssen ihr Konto selbst über „Konto aktivieren"
+            (auf dem Anmeldescreen) mit ihrer E-Mail aktivieren, bevor sie sich anmelden können.
+          </p>
         </form>
       </section>
 
@@ -74,11 +85,18 @@ export default async function MitgliederPage() {
                   <div className="font-medium text-ink">{m.name}</div>
                   <div className="text-sm text-muted break-all">{m.email}</div>
                 </div>
-                <span
-                  className={`badge shrink-0 ${m.status === "aktiv" ? "badge-success" : "badge-muted"}`}
-                >
-                  {m.status}
-                </span>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span
+                    className={`badge ${m.status === "aktiv" ? "badge-success" : "badge-muted"}`}
+                  >
+                    {m.status}
+                  </span>
+                  {!aktiviertSet.has(m.mitgliedId) && (
+                    <span className="badge badge-warn" title="Mitglied hat noch kein Passwort gesetzt">
+                      Konto nicht aktiviert
+                    </span>
+                  )}
+                </div>
               </div>
               <form action={aktualisiereMitglied} className="mt-3 flex flex-col gap-3">
                 <input type="hidden" name="mitgliedId" value={m.mitgliedId} />

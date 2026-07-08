@@ -1,16 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "./actions";
 import { Baum, type BaumStatus } from "./Baum";
-import { LogIn, Eye, EyeOff, XCircle } from "@/components/icons";
+import { LogIn, Eye, EyeOff, XCircle, CheckCircle } from "@/components/icons";
 
 // Nur UI/Feedback — die Validierung (signInWithPassword) steckt unverändert in der
 // Server-Action `login`, die jetzt ihr Ergebnis zurückgibt. Der Baum reagiert nur auf
 // dieses Ergebnis: rot „Falsch" bzw. grün „Danke", danach Weiterleitung bei Erfolg.
 
-export function LoginForm() {
+export function LoginForm({ aktiviert = false }: { aktiviert?: boolean }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(login, { status: "idle" as const });
   const [showPw, setShowPw] = useState(false);
@@ -54,6 +55,14 @@ export function LoginForm() {
         action={formAction}
         className={`flex flex-col gap-4 ${phase === "fehler" ? "shake" : ""}`}
       >
+        {aktiviert && !fehler && (
+          <p
+            className="flex items-center gap-2 rounded-btn border border-green-200 bg-green-50 px-3.5 py-2.5 text-sm font-medium text-green-800"
+            role="status"
+          >
+            <CheckCircle /> Konto aktiviert — bitte melde dich jetzt an.
+          </p>
+        )}
         {fehler && (
           <p className="login-error" role="alert">
             <XCircle /> E-Mail oder Passwort stimmt nicht. Bitte versuch es noch einmal.
@@ -104,6 +113,11 @@ export function LoginForm() {
           {pending ? <span className="spinner" /> : <><LogIn /> Anmelden</>}
         </button>
       </form>
+
+      {/* Sekundär, bewusst dezenter als „Anmelden": Erstlogin für admin-angelegte Mitglieder. */}
+      <p className="text-center text-sm text-muted">
+        Neu bei FitZone? <Link href="/aktivieren">Konto aktivieren</Link>
+      </p>
     </>
   );
 }
