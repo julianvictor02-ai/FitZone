@@ -18,7 +18,10 @@ import { sql } from "drizzle-orm";
 
 // --- Enums ---
 export const tarifName = pgEnum("tarif_name", ["Basic", "Plus", "Premium"]);
-export const mitgliedStatus = pgEnum("mitglied_status", ["aktiv", "pausiert"]);
+// „geloescht" = Soft-Delete (FZ-006): Mitglied verschwindet aus der aktiven Liste und kann
+// sich nicht mehr anmelden, der Datensatz bleibt aber für die Referenzintegrität bestehender
+// Buchungen/Anwesenheits-/Storno-Historie erhalten (Nachweis-Zeitstempel nicht verhandelbar).
+export const mitgliedStatus = pgEnum("mitglied_status", ["aktiv", "pausiert", "geloescht"]);
 export const kurstypName = pgEnum("kurstyp_name", [
   "Yoga",
   "Pilates",

@@ -1,9 +1,10 @@
-import { asc, isNotNull } from "drizzle-orm";
+import { asc, isNotNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { benutzer, mitglied, tarif } from "@/lib/db/schema";
 import { requireRolle } from "@/lib/auth/benutzer";
 import { Info } from "@/components/icons";
-import { erstelleMitglied, aktualisiereMitglied } from "./actions";
+import { erstelleMitglied } from "./actions";
+import { MitgliedVerwalten } from "./MitgliedVerwalten";
 
 export default async function MitgliederPage() {
   await requireRolle("admin");
@@ -19,6 +20,8 @@ export default async function MitgliederPage() {
         mitgliedschaftBis: mitglied.mitgliedschaftBis,
       })
       .from(mitglied)
+      // Soft-gelöschte Mitglieder verschwinden aus der aktiven Liste (FZ-006).
+      .where(ne(mitglied.status, "geloescht"))
       .orderBy(asc(mitglied.name)),
     db.select().from(tarif).orderBy(asc(tarif.name)),
     // Aktiviert = es existiert eine benutzer-Verknüpfung (Auth-Konto) zum Mitglied.
@@ -80,47 +83,11 @@ export default async function MitgliederPage() {
         <ul className="stack">
           {mitglieder.map((m) => (
             <li key={m.mitgliedId} className="card">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-medium text-ink">{m.name}</div>
-                  <div className="text-sm text-muted break-all">{m.email}</div>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span
-                    className={`badge ${m.status === "aktiv" ? "badge-success" : "badge-muted"}`}
-                  >
-                    {m.status}
-                  </span>
-                  {!aktiviertSet.has(m.mitgliedId) && (
-                    <span className="badge badge-warn" title="Mitglied hat noch kein Passwort gesetzt">
-                      Konto nicht aktiviert
-                    </span>
-                  )}
-                </div>
-              </div>
-              <form action={aktualisiereMitglied} className="mt-3 flex flex-col gap-3">
-                <input type="hidden" name="mitgliedId" value={m.mitgliedId} />
-                <label className="flex flex-col gap-1 text-sm text-muted">
-                  Tarif
-                  <select name="tarifId" defaultValue={m.tarifId} className="input">
-                    {tarife.map((t) => (
-                      <option key={t.tarifId} value={t.tarifId}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 text-sm text-muted">
-                  Status
-                  <select name="status" defaultValue={m.status} className="input">
-                    <option value="aktiv">aktiv</option>
-                    <option value="pausiert">pausiert</option>
-                  </select>
-                </label>
-                <button type="submit" className="btn btn-outline btn-block">
-                  Speichern
-                </button>
-              </form>
+              <MitgliedVerwalten
+                mitglied={m}
+                tarife={tarife.map((t) => ({ tarifId: t.tarifId, name: t.name }))}
+                aktiviert={aktiviertSet.has(m.mitgliedId)}
+              />
             </li>
           ))}
           {mitglieder.length === 0 && <li className="empty">Noch keine Mitglieder.</li>}
