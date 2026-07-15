@@ -181,6 +181,23 @@ async function main() {
     });
   }
 
+  // FZ-011 — echtes YouTube-On-Demand-Video (In-App-Player, ab Plus). Idempotent
+  // per video_id, damit es auch in bereits befüllten DBs ergänzt wird.
+  const YT_ID_HIIT = "BwvCBEfFJls";
+  const [ytHiitVorhanden] = await db
+    .select({ id: onDemandVideo.videoId })
+    .from(onDemandVideo)
+    .where(and(eq(onDemandVideo.plattform, "YouTube"), eq(onDemandVideo.url, YT_ID_HIIT)));
+  if (!ytHiitVorhanden) {
+    await db.insert(onDemandVideo).values({
+      titel: "HIIT Workout",
+      kurstypId: kHIIT.kurstypId,
+      mindestTarif: "Plus",
+      plattform: "YouTube",
+      url: YT_ID_HIIT,
+    });
+  }
+
   const anzahlTermine = (
     await db
       .select({ id: kurstermin.kursterminId })
