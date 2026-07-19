@@ -18,7 +18,11 @@ function getDb(): DB {
   if (!instanz) {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error("DATABASE_URL ist nicht gesetzt");
-    const client = postgres(connectionString, { prepare: false });
+    // max:1 — auf Vercel läuft jede Serverless-Instanz isoliert; ohne Limit öffnet
+    // postgres.js bis zu 10 Verbindungen PRO Instanz und erschöpft bei vielen kalten
+    // Lambdas den Supabase-Pooler (sporadische „server-side exception", per Reload heilbar).
+    // Eine Verbindung pro Instanz genügt (Requests sind kurzlebig). prepare:false wegen Pooler.
+    const client = postgres(connectionString, { prepare: false, max: 1 });
     instanz = drizzle(client, { schema });
   }
   return instanz;
