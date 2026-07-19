@@ -26,6 +26,7 @@ const NAV: Record<string, NavItem[]> = {
     { href: "/admin/no-show", label: "No-Show-Auswertung", icon: CheckCircle },
     { href: "/admin/storno", label: "Storno-Gebühren", icon: Euro },
     { href: "/admin/kurstypen", label: "Kurspreise", icon: CreditCard },
+    { href: "/admin/videos", label: "Videos verwalten", icon: Video },
   ],
   trainer: [{ href: "/trainer", label: "Mein Kursplan", icon: Calendar }],
   mitglied: [

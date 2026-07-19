@@ -1,0 +1,1 @@
+ALTER TABLE "on_demand_video" ADD COLUMN "geloescht" boolean DEFAULT false NOT NULL;

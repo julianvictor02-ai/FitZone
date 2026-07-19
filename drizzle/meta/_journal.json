@@ -71,6 +71,13 @@
       "when": 1783524609508,
       "tag": "0009_lovely_timeslip",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784472632980,
+      "tag": "0010_freezing_doctor_strange",
+      "breakpoints": true
     }
   ]
 }

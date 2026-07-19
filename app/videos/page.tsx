@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { requireRolle } from "@/lib/auth/benutzer";
 import { db } from "@/lib/db";
 import { kurstyp, mitglied, onDemandVideo, tarif } from "@/lib/db/schema";
@@ -46,7 +46,8 @@ export default async function VideosPage() {
         })
         .from(onDemandVideo)
         .leftJoin(kurstyp, eq(onDemandVideo.kurstypId, kurstyp.kurstypId))
-        .where(inArray(onDemandVideo.mindestTarif, erlaubt))
+        // Tarif-Filter (BR7) UND Soft-Delete ausblenden (FZ-027).
+        .where(and(inArray(onDemandVideo.mindestTarif, erlaubt), eq(onDemandVideo.geloescht, false)))
         .orderBy(asc(onDemandVideo.titel))
     : [];
 

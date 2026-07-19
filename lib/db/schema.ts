@@ -122,6 +122,9 @@ export const onDemandVideo = pgTable("on_demand_video", {
   mindestTarif: tarifName("mindest_tarif").notNull(), // ordinale Zugriffsschwelle (BR7)
   plattform: text("plattform"),
   url: text("url"),
+  // Soft-Delete (FZ-027, analog Mitglied FZ-006): ausgeblendet in Admin-Liste und
+  // Mitglieder-Videos, der Datensatz bleibt physisch erhalten.
+  geloescht: boolean("geloescht").notNull().default(false),
 });
 
 // --- Junction-Tabellen (n:m) ---
