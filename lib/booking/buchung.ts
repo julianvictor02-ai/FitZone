@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { buchung, kurstermin, mitglied, tarif } from "@/lib/db/schema";
 import { pruefeMonatslimit } from "@/lib/booking/limit";
+import { mitgliedIstAktiv } from "@/lib/booking/mitglied";
 import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 
 // FZ-001 — Kursbuchung mit Auto-Bestätigung (Business Rule BR1).
@@ -13,6 +14,7 @@ export type BuchungErgebnis =
   | { status: "bereits_gebucht" } // aktive Buchung existiert bereits
   | { status: "limit_erreicht"; limit: number } // Monatslimit des Tarifs erreicht (BR4)
   | { status: "livestream_gesperrt" } // Basic darf keine Livestreams buchen (BR7/FZ-018)
+  | { status: "mitglied_pausiert" } // Mitgliedschaft pausiert/gelöscht → nicht buchbar (§2b)
   | { status: "kurs_nicht_buchbar" }; // Termin fehlt / abgesagt / verschoben
 
 /**
@@ -42,6 +44,9 @@ export async function bucheKurstermin(
     if (!termin || termin.status !== "geplant") {
       return { status: "kurs_nicht_buchbar" };
     }
+
+    // 2a. Mitglied muss aktiv sein — pausierte/gelöschte Mitglieder buchen nicht (§2b).
+    if (!(await mitgliedIstAktiv(tx, mitgliedId))) return { status: "mitglied_pausiert" };
 
     // 2. Livestream-Gate (BR7/FZ-018): Basic (livestream_zugriff ≠ true) darf keine
     //    Livestream-Kurse buchen — nur Studio.

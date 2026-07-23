@@ -36,6 +36,7 @@ const MELDUNG: Record<string, string> = {
   abgelaufen: "Frist abgelaufen",
   kein_angebot: "Kein Nachrück-Angebot",
   livestream_gesperrt: "Livestreams nur ab Plus",
+  mitglied_pausiert: "Mitgliedschaft pausiert — bitte an den Admin wenden",
 };
 
 const AKTUALISIEREN = new Set([
