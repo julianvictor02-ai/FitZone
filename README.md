@@ -5,8 +5,11 @@ Projektdoku und -methodik: siehe [`CLAUDE.md`](./CLAUDE.md) und [`docs/`](./docs
 
 ## Stack
 
-Next.js (App Router, TypeScript) · Supabase (PostgreSQL + Auth + RLS) · Drizzle ORM · Tailwind CSS
+Next.js (App Router, TypeScript) · Supabase (PostgreSQL + Auth) · Drizzle ORM · Tailwind CSS
 → Begründung in [`docs/decisions.md`](./docs/decisions.md), Details in [`docs/architecture.md`](./docs/architecture.md).
+
+Zugriffskontrolle ist **serverseitig auf App-Ebene** durchgesetzt (Server Components/Actions
+via `requireRolle` + Session-gebundene `mitgliedId`/`trainerId`), nicht über Supabase-RLS.
 
 ## Setup
 
@@ -22,9 +25,22 @@ Benötigte Env-Variablen (Supabase Dashboard → Project Settings):
 
 ```bash
 npm run dev          # Dev-Server auf http://localhost:3000
-npm run build        # Production-Build
+npm run build        # Production-Build (Lint + Type-Check sind Build-Gate)
 npm run lint         # ESLint
+npm test             # Vitest — Unit-Tests der Regel-Funktionen (BR4/BR5/BR7, ohne DB)
 ```
+
+Die `scripts/verify-fzNNN.ts` sind zusätzliche Integrations-Checks gegen eine
+geseedete DB (`npm run verify:fz001` …); sie brauchen `DATABASE_URL` + Seed.
+
+## Bekannte Einschränkung
+
+Das automatische Nachrücken nach Ablauf des 30-Min-Bestätigungsfensters (BR2) wird
+bei Storno **sofort** ausgelöst; das reine *Verfallen* eines unbestätigten Angebots
+läuft dagegen über den Cron `/api/cron/warteliste`. Auf dem Vercel-Hobby-Plan ist der
+Cron auf **täglich** begrenzt (`vercel.json`), d. h. ohne Storno-Event rückt der/die
+Nächste erst beim nächsten Cron-Lauf nach. Für echtzeitnahes Verfallen genügt ein
+häufigerer Trigger (Vercel Pro / externer Scheduler / Supabase `pg_cron`, z. B. alle 5 Min).
 
 ## Datenbank (Drizzle)
 
