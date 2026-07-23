@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { benutzer, mitglied } from "@/lib/db/schema";
 import { PASSWORT_MIN } from "@/lib/auth/konstanten";

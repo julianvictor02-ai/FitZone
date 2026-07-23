@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { buchung, kurstermin, mitglied, tarif, wartelisteneintrag } from "@/lib/db/schema";
 import { benachrichtige } from "@/lib/notify";
 import { pruefeMonatslimit } from "@/lib/booking/limit";
+import { mitgliedIstAktiv } from "@/lib/booking/mitglied";
 import { darfLivestreamBuchen } from "@/lib/content/zugriff";
 
 // FZ-002 — Warteliste: FIFO-Nachrücken, 30-Min-Fenster, harte Obergrenze (BR2/BR3).
@@ -27,6 +28,7 @@ export type WarteErgebnis =
   | { status: "bereits_wartend"; position: number }
   | { status: "warteliste_voll" }
   | { status: "livestream_gesperrt" } // Basic darf keine Livestreams (BR7/FZ-018)
+  | { status: "mitglied_pausiert" } // Mitgliedschaft pausiert/gelöscht → nicht buchbar (§2b)
   | { status: "kurs_nicht_buchbar" };
 
 export type NachrueckErgebnis =
@@ -34,6 +36,7 @@ export type NachrueckErgebnis =
   | { status: "abgelaufen" }
   | { status: "kein_angebot" } //        kein aktives Nachrück-Angebot
   | { status: "limit_erreicht"; limit: number } // Monatslimit erreicht (BR4)
+  | { status: "mitglied_pausiert" } // Mitgliedschaft pausiert/gelöscht → nicht buchbar (§2b)
   | { status: "kurs_nicht_buchbar" };
 
 async function bestaetigteBelegung(tx: Tx, kursterminId: string): Promise<number> {
@@ -67,6 +70,10 @@ export async function warteAufKurstermin(
       .for("update");
 
     if (!termin || termin.status !== "geplant") return { status: "kurs_nicht_buchbar" };
+
+    // Pausierte/gelöschte Mitglieder kommen nicht auf die Warteliste (§2b) — sonst würden
+    // sie beim Nachrücken eine Buchung erzeugen, die sie gar nicht anlegen dürften.
+    if (!(await mitgliedIstAktiv(tx, mitgliedId))) return { status: "mitglied_pausiert" };
 
     // Livestream-Gate (BR7/FZ-018): Basic darf nicht mal auf die Livestream-Warteliste.
     if (termin.modus === "Livestream") {
@@ -216,6 +223,9 @@ export async function bestaetigeNachrueckung(
       .where(eq(kurstermin.kursterminId, kursterminId))
       .for("update");
     if (!termin || termin.status !== "geplant") return { status: "kurs_nicht_buchbar" };
+
+    // Pausierte/gelöschte Mitglieder dürfen kein Angebot mehr einlösen (§2b).
+    if (!(await mitgliedIstAktiv(tx, mitgliedId))) return { status: "mitglied_pausiert" };
 
     const [eintrag] = await tx
       .select({ id: wartelisteneintrag.wlId, fristBis: wartelisteneintrag.fristBis })
