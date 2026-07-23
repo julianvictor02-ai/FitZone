@@ -71,7 +71,7 @@ export default async function MitgliederPage() {
             Anlegen
           </button>
           <p className="hinweis">
-            <Info /> Neu angelegte Mitglieder müssen ihr Konto selbst über „Konto aktivieren"
+            <Info /> Neu angelegte Mitglieder müssen ihr Konto selbst über &bdquo;Konto aktivieren&ldquo;
             (auf dem Anmeldescreen) mit ihrer E-Mail aktivieren, bevor sie sich anmelden können.
           </p>
         </form>
